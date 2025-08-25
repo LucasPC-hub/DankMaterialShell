@@ -5,7 +5,6 @@ pragma ComponentBehavior
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import Quickshell.Wayland
 
 Singleton {
     id: root
@@ -23,19 +22,45 @@ Singleton {
 
     // Window management
     property var windows: []
+    property int focusedWindowIndex: -1
+    property string focusedWindowTitle: "(No active window)"
+    property string focusedWindowId: ""
 
     // Overview state
     property bool inOverview: false
 
-    // Internal state (not exposed to external components)
+    // Config validation
     property string configValidationOutput: ""
     property bool hasInitialConnection: false
 
+    signal windowOpenedOrChanged(var windowData)
+
+    // Feature availability
+    property bool niriAvailable: false
 
     readonly property string socketPath: Quickshell.env("NIRI_SOCKET")
 
+    Component.onCompleted: checkNiriAvailability()
+
+    Process {
+        id: niriCheck
+        command: ["test", "-S", root.socketPath]
+
+        onExited: exitCode => {
+            root.niriAvailable = exitCode === 0
+            if (root.niriAvailable) {
+                eventStreamSocket.connected = true
+                fetchOutputs()
+            }
+        }
+    }
+
+    function checkNiriAvailability() {
+        niriCheck.running = true
+    }
+
     function fetchOutputs() {
-        if (CompositorService.isNiri) {
+        if (niriAvailable) {
             outputsProcess.running = true
         }
     }
@@ -73,7 +98,7 @@ Singleton {
     Socket {
         id: eventStreamSocket
         path: root.socketPath
-        connected: CompositorService.isNiri
+        connected: false
 
         onConnectionStateChanged: {
             if (connected) {
@@ -96,7 +121,7 @@ Singleton {
     Socket {
         id: requestSocket
         path: root.socketPath
-        connected: CompositorService.isNiri
+        connected: root.niriAvailable
     }
 
     function sortWindowsByLayout(windowList) {
@@ -178,6 +203,8 @@ Singleton {
             handleWindowsChanged(event.WindowsChanged)
         } else if (event.WindowClosed) {
             handleWindowClosed(event.WindowClosed)
+        } else if (event.WindowFocusChanged) {
+            handleWindowFocusChanged(event.WindowFocusChanged)
         } else if (event.WindowOpenedOrChanged) {
             handleWindowOpenedOrChanged(event.WindowOpenedOrChanged)
         } else if (event.WindowLayoutsChanged) {
@@ -252,6 +279,10 @@ Singleton {
         // This is crucial for handling floating window close scenarios
         if (data.active_window_id !== null
                 && data.active_window_id !== undefined) {
+            focusedWindowId = String(data.active_window_id)
+            focusedWindowIndex = windows.findIndex(
+                        w => w.id == data.active_window_id)
+
             // Create new windows array with updated focus states to trigger property change
             let updatedWindows = []
             for (var i = 0; i < windows.length; i++) {
@@ -264,8 +295,13 @@ Singleton {
                 updatedWindows.push(updatedWindow)
             }
             windows = updatedWindows
+
+            updateFocusedWindow()
         } else {
             // No active window in this workspace
+            focusedWindowId = ""
+            focusedWindowIndex = -1
+
             // Create new windows array with cleared focus states for this workspace
             let updatedWindows = []
             for (var i = 0; i < windows.length; i++) {
@@ -279,15 +315,42 @@ Singleton {
                 updatedWindows.push(updatedWindow)
             }
             windows = updatedWindows
+
+            updateFocusedWindow()
         }
     }
 
     function handleWindowsChanged(data) {
         windows = sortWindowsByLayout(data.windows)
+
+        // Extract focused window from initial state
+        var focusedWindow = windows.find(w => w.is_focused)
+        if (focusedWindow) {
+            focusedWindowId = String(focusedWindow.id)
+            focusedWindowIndex = windows.findIndex(
+                        w => w.id === focusedWindow.id)
+        } else {
+            focusedWindowId = ""
+            focusedWindowIndex = -1
+        }
+
+        updateFocusedWindow()
     }
 
     function handleWindowClosed(data) {
         windows = windows.filter(w => w.id !== data.id)
+        updateFocusedWindow()
+    }
+
+    function handleWindowFocusChanged(data) {
+        if (data.id) {
+            focusedWindowId = data.id
+            focusedWindowIndex = windows.findIndex(w => w.id === data.id)
+        } else {
+            focusedWindowId = ""
+            focusedWindowIndex = -1
+        }
+        updateFocusedWindow()
     }
 
     function handleWindowOpenedOrChanged(data) {
@@ -305,6 +368,14 @@ Singleton {
             windows = sortWindowsByLayout([...windows, window])
         }
 
+        if (window.is_focused) {
+            focusedWindowId = window.id
+            focusedWindowIndex = windows.findIndex(w => w.id === window.id)
+        }
+
+        updateFocusedWindow()
+
+        windowOpenedOrChanged(window)
     }
 
     function handleWindowLayoutsChanged(data) {
@@ -406,8 +477,17 @@ Singleton {
         currentOutputWorkspaces = outputWs
     }
 
+    function updateFocusedWindow() {
+        if (focusedWindowIndex >= 0 && focusedWindowIndex < windows.length) {
+            var focusedWin = windows[focusedWindowIndex]
+            focusedWindowTitle = focusedWin.title || "(Unnamed window)"
+        } else {
+            focusedWindowTitle = "(No active window)"
+        }
+    }
+
     function send(request) {
-        if (!CompositorService.isNiri || !requestSocket.connected)
+        if (!niriAvailable || !requestSocket.connected)
             return false
         requestSocket.write(JSON.stringify(request) + "\n")
         return true
@@ -438,7 +518,25 @@ Singleton {
         return 1
     }
 
+    function focusWindow(windowId) {
+        return send({
+                        "Action": {
+                            "FocusWindow": {
+                                "id": windowId
+                            }
+                        }
+                    })
+    }
 
+    function closeWindow(windowId) {
+        return send({
+                        "Action": {
+                            "CloseWindow": {
+                                "id": windowId
+                            }
+                        }
+                    })
+    }
 
     function quit() {
         return send({
@@ -450,66 +548,58 @@ Singleton {
                     })
     }
 
-
-
-    function sortToplevels(toplevels) {
-        if (!toplevels || toplevels.length === 0 || !CompositorService.isNiri || windows.length === 0) {
-            return [...toplevels]
-        }
-       
-        // Create a map to match toplevels to niri windows
-        // We'll match by appId and title since toplevels don't have numeric IDs
-        var toplevelToNiriMap = {}
-        
-        for (var i = 0; i < toplevels.length; i++) {
-            var toplevel = toplevels[i]
-            if (!toplevel.appId) continue
-            
-            // Find matching niri window by appId and optionally title
-            for (var j = 0; j < windows.length; j++) {
-                var niriWindow = windows[j]
-                
-                // Match by appId
-                if (niriWindow.app_id === toplevel.appId) {
-                    // If title also matches or niri window has no title, use this match
-                    if (!niriWindow.title || niriWindow.title === toplevel.title) {
-                        toplevelToNiriMap[i] = {
-                            niriIndex: j,
-                            niriWindow: niriWindow
-                        }
-                        break
-                    }
-                    // If we found appId match but no title match yet, store as fallback
-                    if (!(i in toplevelToNiriMap)) {
-                        toplevelToNiriMap[i] = {
-                            niriIndex: j,
-                            niriWindow: niriWindow
-                        }
-                    }
-                }
-            }
-        }
-        
-        // Sort toplevels using niri's ordering
-        return [...toplevels].sort((a, b) => {
-            var aIndex = toplevels.indexOf(a)
-            var bIndex = toplevels.indexOf(b)
-            
-            var aNiri = toplevelToNiriMap[aIndex]
-            var bNiri = toplevelToNiriMap[bIndex]
-            
-            // If both have niri data, use niri ordering
-            if (aNiri && bNiri) {
-                return aNiri.niriIndex - bNiri.niriIndex
-            }
-            
-            // If only one has niri data, prioritize it
-            if (aNiri && !bNiri) return -1
-            if (!aNiri && bNiri) return 1
-            
-            // If neither has niri data, keep original toplevel order
-            return 0
-        })
+    function getWindowsByAppId(appId) {
+        if (!appId)
+            return []
+        return windows.filter(w => w.app_id && w.app_id.toLowerCase(
+                                  ) === appId.toLowerCase())
     }
 
+    function getRunningAppIds() {
+        var appIds = new Set()
+        windows.forEach(w => {
+                            if (w.app_id) {
+                                appIds.add(w.app_id.toLowerCase())
+                            }
+                        })
+        return Array.from(appIds)
+    }
+
+    function getRunningAppIdsOrdered() {
+        // Get unique app IDs in order they appear in the Niri layout
+        // Windows are sorted by workspace and then by position within the workspace
+        var sortedWindows = [...windows].sort((a, b) => {
+                                                  // If both have layout info, sort by position
+                                                  if (a.layout && b.layout
+                                                      && a.layout.pos_in_scrolling_layout
+                                                      && b.layout.pos_in_scrolling_layout) {
+                                                      var aPos = a.layout.pos_in_scrolling_layout
+                                                      var bPos = b.layout.pos_in_scrolling_layout
+
+                                                      // First compare workspace index
+                                                      if (aPos[0] !== bPos[0]) {
+                                                          return aPos[0] - bPos[0]
+                                                      }
+                                                      // Then compare position within workspace
+                                                      return aPos[1] - bPos[1]
+                                                  }
+                                                  // Fallback to window ID if no layout info
+                                                  return a.id - b.id
+                                              })
+
+        var appIds = []
+        var seenApps = new Set()
+
+        sortedWindows.forEach(w => {
+                                  if (w.app_id) {
+                                      var lowerAppId = w.app_id.toLowerCase()
+                                      if (!seenApps.has(lowerAppId)) {
+                                          appIds.push(lowerAppId)
+                                          seenApps.add(lowerAppId)
+                                      }
+                                  }
+                              })
+
+        return appIds
+    }
 }

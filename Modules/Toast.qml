@@ -66,7 +66,9 @@ PanelWindow {
             }
         }
 
-        width: shouldBeVisible ? (ToastService.hasDetails ? 380 : 350) : frozenWidth
+        width: shouldBeVisible ? 
+               (ToastService.hasDetails ? 380 : messageText.implicitWidth + Theme.iconSize + Theme.spacingM * 3 + Theme.spacingL * 2) : 
+               frozenWidth
         height: toastContent.height + Theme.spacingL * 2
         anchors.horizontalCenter: parent.horizontalCenter
         y: Theme.barHeight - 4 + SettingsData.topBarSpacing + 2
@@ -130,14 +132,10 @@ PanelWindow {
                     anchors.left: statusIcon.right
                     anchors.leftMargin: Theme.spacingM
                     anchors.verticalCenter: parent.verticalCenter
-                    anchors.right: ToastService.hasDetails ? expandButton.left : closeButton.left
-                    anchors.rightMargin: Theme.spacingM
                     wrapMode: Text.NoWrap
-                    elide: Text.ElideRight
                 }
 
                 DankActionButton {
-                    id: expandButton
                     iconName: toast.expanded ? "expand_less" : "expand_more"
                     iconSize: Theme.iconSize
                     iconColor: Theme.background

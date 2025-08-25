@@ -42,8 +42,6 @@ This is a Quickshell-based desktop shell implementation with Material Design 3 d
 
 **Architecture**: Modular design with clean separation between UI components (Modules), system services (Services), and shared utilities (Common).
 
-**Compositor Support**: Originally designed for niri, now also fully compatible with Hyprland. Both compositors are supported with their own configuration examples and keybind formats.
-
 ## Technology Stack
 
 - **QML (Qt Modeling Language)** - Primary language for all UI components
@@ -339,10 +337,9 @@ shell.qml           # Main entry point (minimal orchestration)
 
 The shell uses Quickshell's `Variants` pattern for multi-monitor support:
 - Each connected monitor gets its own top bar instance
-- Workspace switchers are compositor-aware (Niri and Hyprland)
+- Workspace switchers are per-display and Niri-aware
 - Monitors are automatically detected by screen name (DP-1, DP-2, etc.)
-- **Niri**: Workspaces are dynamically synchronized with Niri's per-output workspaces
-- **Hyprland**: Integrates with Hyprland's workspace system and multi-monitor handling
+- Workspaces are dynamically synchronized with Niri's per-output workspaces
 
 ## Common Development Tasks
 
@@ -355,8 +352,7 @@ When modifying the shell:
 4. **Theming**: Use `Theme.propertyName` for Material Design 3 consistency
 5. **Wayland compatibility**: Test on Wayland session
 6. **Multi-monitor**: Verify behavior with multiple displays
-7. **Compositor compatibility**: Test on both Niri and Hyprland when possible
-8. **Feature detection**: Test on systems with/without required tools
+7. **Feature detection**: Test on systems with/without required tools
 
 ### Adding New Modules
 

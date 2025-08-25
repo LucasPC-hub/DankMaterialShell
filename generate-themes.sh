@@ -1,21 +1,20 @@
 #!/bin/bash
 
 # System theme generation script for DankMaterialShell
-# This script uses matugen to generate GTK and Qt themes from wallpaper or color
+# This script uses matugen to generate GTK and Qt themes from wallpaper
 
-INPUT_SOURCE="$1"       # Wallpaper path or hex color (e.g., "#42a5f5")
+WALLPAPER_PATH="$1"
 SHELL_DIR="$2"
-CONFIG_DIR="$3"         # Config directory (typically ~/.config)
-MODE="$4"               # "generate", "generate-color", or "restore"
-IS_LIGHT="$5"           # "true" for light mode, "false" for dark mode
-ICON_THEME="$6"         # Icon theme name
-GTK_THEMING="$7"        # "true" to enable GTK theming, "false" to disable
-QT_THEMING="$8"         # "true" to enable Qt theming, "false" to disable
+CONFIG_DIR="$3"  # Config directory (typically ~/.config)
+MODE="$4"        # "generate" or "restore"
+IS_LIGHT="$5"    # "true" for light mode, "false" for dark mode
+ICON_THEME="$6"  # Icon theme name
+GTK_THEMING="$7" # "true" to enable GTK theming, "false" to disable
+QT_THEMING="$8"  # "true" to enable Qt theming, "false" to disable
 
 if [ -z "$SHELL_DIR" ] || [ -z "$CONFIG_DIR" ]; then
-    echo "Usage: $0 <input_source> <shell_dir> <config_dir> [mode] [is_light] [icon_theme] [gtk_theming] [qt_theming]" >&2
-    echo "  input_source: wallpaper path for 'generate' mode, hex color for 'generate-color' mode" >&2
-    echo "  For restore mode, input_source can be empty" >&2
+    echo "Usage: $0 <wallpaper_path> <shell_dir> <config_dir> [mode] [is_light] [icon_theme] [gtk_theming] [qt_theming]" >&2
+    echo "  For restore mode, wallpaper_path can be empty" >&2
     exit 1
 fi
 
@@ -97,34 +96,71 @@ update_qt_config() {
     update_qt_color_config() {
         local config_file="$1"
         local version="$2"
-        local color_scheme_path="$(dirname "$config_dir")/.local/share/color-schemes/DankMatugen.colors"
+        local color_scheme_path="$config_dir/qt${version}ct/colors/matugen.conf"
         
         if [ -f "$config_file" ]; then
-            # Use a simple sed approach to only update specific lines
-            # First, check if the [Appearance] section exists
-            if grep -q '^\[Appearance\]' "$config_file"; then
-                # Update custom_palette if it exists, otherwise add it after [Appearance]
-                if grep -q '^custom_palette=' "$config_file"; then
-                    sed -i 's/^custom_palette=.*/custom_palette=true/' "$config_file"
-                else
-                    sed -i '/^\[Appearance\]/a custom_palette=true' "$config_file"
-                fi
-                
-                # Update color_scheme_path if it exists, otherwise add it after [Appearance]
-                if grep -q '^color_scheme_path=' "$config_file"; then
-                    sed -i "s|^color_scheme_path=.*|color_scheme_path=$color_scheme_path|" "$config_file"
-                else
-                    sed -i "/^\[Appearance\]/a color_scheme_path=$color_scheme_path" "$config_file"
-                fi
-            else
-                # Add [Appearance] section at the end with our settings
-                echo "" >> "$config_file"
-                echo "[Appearance]" >> "$config_file"
-                echo "custom_palette=true" >> "$config_file"
-                echo "color_scheme_path=$color_scheme_path" >> "$config_file"
-            fi
+            # Read the entire file and carefully update only what we need
+            python3 -c "
+import sys
+import re
+
+config_file = '$config_file'
+color_scheme_path = '$color_scheme_path'
+
+try:
+    with open(config_file, 'r') as f:
+        content = f.read()
+    
+    lines = content.split('\n')
+    result = []
+    in_appearance = False
+    custom_palette_found = False
+    color_scheme_found = False
+    
+    for line in lines:
+        stripped = line.strip()
+        
+        if stripped == '[Appearance]':
+            in_appearance = True
+            result.append(line)
+        elif stripped.startswith('[') and stripped != '[Appearance]':
+            # End of [Appearance] section, add missing settings if needed
+            if in_appearance:
+                if not custom_palette_found:
+                    result.append('custom_palette=true')
+                if not color_scheme_found:
+                    result.append('color_scheme_path=' + color_scheme_path)
+            in_appearance = False
+            result.append(line)
+        elif in_appearance and stripped.startswith('custom_palette='):
+            custom_palette_found = True
+            result.append('custom_palette=true')
+        elif in_appearance and stripped.startswith('color_scheme_path='):
+            color_scheme_found = True
+            result.append('color_scheme_path=' + color_scheme_path)
+        else:
+            result.append(line)
+    
+    # Handle case where [Appearance] is the last section
+    if in_appearance:
+        if not custom_palette_found:
+            result.append('custom_palette=true')
+        if not color_scheme_found:
+            result.append('color_scheme_path=' + color_scheme_path)
+    
+    # If no [Appearance] section exists, create one
+    if not any('[Appearance]' in line for line in lines):
+        result.extend(['', '[Appearance]', 'custom_palette=true', 'color_scheme_path=' + color_scheme_path])
+    
+    with open(config_file, 'w') as f:
+        f.write('\n'.join(result))
+        
+except Exception as e:
+    print(f'Error updating {config_file}: {e}', file=sys.stderr)
+    sys.exit(1)
+"
         else
-            # Create new config file with minimal settings
+            # Create new config file
             printf '[Appearance]\ncustom_palette=true\ncolor_scheme_path=%s\n' "$color_scheme_path" > "$config_file"
         fi
     }
@@ -159,17 +195,9 @@ if [ "$MODE" = "restore" ]; then
 fi
 
 # Continue with generation mode
-if [ "$MODE" = "generate" ]; then
-    if [ ! -f "$INPUT_SOURCE" ]; then
-        echo "Wallpaper file not found: $INPUT_SOURCE" >&2
-        exit 1
-    fi
-elif [ "$MODE" = "generate-color" ]; then
-    # Validate hex color format
-    if ! echo "$INPUT_SOURCE" | grep -qE '^#[0-9A-Fa-f]{6}$'; then
-        echo "Invalid hex color format: $INPUT_SOURCE (expected format: #RRGGBB)" >&2
-        exit 1
-    fi
+if [ ! -f "$WALLPAPER_PATH" ]; then
+    echo "Wallpaper file not found: $WALLPAPER_PATH" >&2
+    exit 1
 fi
 
 if [ ! -d "$SHELL_DIR" ]; then
@@ -189,22 +217,12 @@ if [ ! -f "matugen-config.toml" ]; then
 fi
 
 # Generate themes using matugen with verbose output
-if [ "$MODE" = "generate" ]; then
-    echo "Generating system themes from wallpaper: $INPUT_SOURCE"
-    echo "Using config: $SHELL_DIR/matugen-config.toml"
-    
-    if ! matugen -v -c matugen-config.toml image "$INPUT_SOURCE"; then
-        echo "Failed to generate system themes with matugen" >&2
-        exit 1
-    fi
-elif [ "$MODE" = "generate-color" ]; then
-    echo "Generating system themes from color: $INPUT_SOURCE"
-    echo "Using config: $SHELL_DIR/matugen-config.toml"
-    
-    if ! matugen -v -c matugen-config.toml color hex "$INPUT_SOURCE"; then
-        echo "Failed to generate system themes with matugen" >&2
-        exit 1
-    fi
+echo "Generating system themes from wallpaper: $WALLPAPER_PATH"
+echo "Using config: $SHELL_DIR/matugen-config.toml"
+
+if ! matugen -v -c matugen-config.toml image "$WALLPAPER_PATH"; then
+    echo "Failed to generate system themes with matugen" >&2
+    exit 1
 fi
 
 # Set color scheme and icon theme based on light/dark mode

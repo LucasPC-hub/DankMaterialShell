@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Controls
 import Quickshell
-import Quickshell.Wayland
 import qs.Common
 import qs.Services
 import qs.Widgets
@@ -10,6 +9,7 @@ Item {
     id: root
 
     property var contextMenu: null
+    property var windowsMenu: null
     property bool requestDockShow: false
     property int pinnedAppCount: 0
 
@@ -62,17 +62,15 @@ Item {
                                                           "isPinned"// Use -1 instead of null
                                                           : true,
                                                           "isRunning": false,
+                                                          "isFocused": false
                                                       })
                                        })
 
                     root.pinnedAppCount = pinnedApps.length
 
-                    // Get sorted toplevels from CompositorService
-                    var sortedToplevels = CompositorService.sortedToplevels
-                    
                     // Add separator between pinned and running if both exist
                     if (pinnedApps.length > 0
-                            && sortedToplevels.length > 0) {
+                            && NiriService.windows.length > 0) {
                         items.push({
                                        "type": "separator",
                                        "appId": "__SEPARATOR__",
@@ -87,25 +85,33 @@ Item {
                                    })
                     }
 
-                    // Second section: Running windows (sorted using Theme.sortToplevels)
-                    sortedToplevels.forEach(toplevel => {
-                                                // Limit window title length for tooltip
-                                                var title = toplevel.title || "(Unnamed)"
-                                                if (title.length > 50) {
-                                                    title = title.substring(0, 47) + "..."
-                                                }
-                                                
-                                                items.push({
-                                                               "type": "window",
-                                                               "appId": toplevel.appId || "",
-                                                               "windowId": -1, // Toplevel doesn't have numeric ID
-                                                               "windowTitle": title,
-                                                               "workspaceId": -1, // Will be handled by sorting
-                                                               "isPinned": false,
-                                                               "isRunning": true,
-                                                               "toplevelObject": toplevel
-                                                           })
-                                            })
+                    // Second section: Running windows (sorted by display->workspace->position)
+                    // NiriService.windows is already sorted by sortWindowsByLayout
+                    NiriService.windows.forEach(window => {
+                                                    // Limit window title length for tooltip
+                                                    var title = window.title
+                                                    || "(Unnamed)"
+                                                    if (title.length > 50) {
+                                                        title = title.substring(
+                                                            0, 47) + "..."
+                                                    }
+
+                                                    // Check if this window is focused - compare as numbers
+                                                    var isFocused = window.id
+                                                    == NiriService.focusedWindowId
+
+                                                    items.push({
+                                                                   "type": "window",
+                                                                   "appId": window.app_id
+                                                                            || "",
+                                                                   "windowId": window.id || -1,
+                                                                   "windowTitle": title,
+                                                                   "workspaceId": window.workspace_id || -1,
+                                                                   "isPinned": false,
+                                                                   "isRunning": true,
+                                                                   "isFocused": isFocused
+                                                               })
+                                                })
 
                     items.forEach(item => {
                                       append(item)
@@ -140,6 +146,7 @@ Item {
 
                     appData: model
                     contextMenu: root.contextMenu
+                    windowsMenu: root.windowsMenu
                     dockApps: root
                     index: model.index
 
@@ -152,12 +159,17 @@ Item {
     }
 
     Connections {
-        target: CompositorService
-        function onSortedToplevelsChanged() {
+        target: NiriService
+        function onWindowsChanged() {
+            dockModel.updateModel()
+        }
+        function onWindowOpenedOrChanged() {
+            dockModel.updateModel()
+        }
+        function onFocusedWindowIdChanged() {
             dockModel.updateModel()
         }
     }
-    
 
     Connections {
         target: SessionData

@@ -19,17 +19,15 @@ DankModal {
                                  StandardPaths.HomeLocation)
     property string currentPath: ""
     property var fileExtensions: ["*.*"]
-    property alias filterExtensions: fileBrowserModal.fileExtensions
     property string browserTitle: "Select File"
     property string browserIcon: "folder_open"
     property string browserType: "generic" // "wallpaper" or "profile" for last path memory
-    property bool showHiddenFiles: false
 
     FolderListModel {
         id: folderModel
         showDirsFirst: true
         showDotAndDotDot: false
-        showHidden: fileBrowserModal.showHiddenFiles
+        showHidden: false
         nameFilters: fileExtensions
         showFiles: true
         showDirs: true
@@ -242,9 +240,10 @@ DankModal {
 
                             CachingImage {
                                 anchors.fill: parent
-                                source: (!delegateRoot.fileIsDir && isImageFile(delegateRoot.fileName)) ? ("file://" + delegateRoot.filePath) : ""
+                                imagePath: !delegateRoot.fileIsDir ? delegateRoot.filePath : ""
                                 fillMode: Image.PreserveAspectCrop
-                                visible: !delegateRoot.fileIsDir && isImageFile(delegateRoot.fileName)
+                                visible: !delegateRoot.fileIsDir && isImageFile(
+                                             delegateRoot.fileName)
                                 maxCacheSize: 80
                             }
 

@@ -44,9 +44,11 @@ ShellRoot {
         delegate: Dock {
             modelData: item
             contextMenu: dockContextMenuLoader.item ? dockContextMenuLoader.item : null
+            windowsMenu: dockWindowsMenuLoader.item ? dockWindowsMenuLoader.item : null
 
             Component.onCompleted: {
                 dockContextMenuLoader.active = true
+                dockWindowsMenuLoader.active = true
             }
         }
     }
@@ -70,6 +72,14 @@ ShellRoot {
         }
     }
 
+    LazyLoader {
+        id: dockWindowsMenuLoader
+        active: false
+
+        DockWindowsMenu {
+            id: dockWindowsMenu
+        }
+    }
 
     LazyLoader {
         id: notificationCenterLoader
@@ -247,9 +257,6 @@ ShellRoot {
             modelData: item
         }
     }
-
-
-
 
     Variants {
         model: Quickshell.screens

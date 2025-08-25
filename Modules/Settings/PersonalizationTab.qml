@@ -155,7 +155,7 @@ Item {
                             CachingImage {
                                 anchors.fill: parent
                                 anchors.margins: 1
-                                source: SessionData.wallpaperPath !== "" ? "file://" + SessionData.wallpaperPath : ""
+                                imagePath: SessionData.wallpaperPath || ""
                                 fillMode: Image.PreserveAspectCrop
                                 visible: SessionData.wallpaperPath !== ""
                                 maxCacheSize: 160
@@ -621,13 +621,13 @@ Item {
                             id: toggle
 
                             anchors.verticalCenter: parent.verticalCenter
-                            checked: Theme.currentTheme === Theme.dynamic
+                            checked: Theme.isDynamicTheme
                             enabled: ToastService.wallpaperErrorStatus !== "matugen_missing"
                             onToggled: toggled => {
                                            if (toggled)
-                                           Theme.switchTheme(Theme.dynamic)
+                                           Theme.switchTheme(10, true)
                                            else
-                                           Theme.switchTheme("blue")
+                                           Theme.switchTheme(0)
                                        }
                         }
                     }

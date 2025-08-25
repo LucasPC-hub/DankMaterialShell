@@ -995,7 +995,6 @@ PanelWindow {
                                 return controlCenterLoader.item
                             }
                             parentScreen: root.screen
-                            widgetData: parent.widgetData
                             onClicked: {
                                 controlCenterLoader.active = true
                                 if (controlCenterLoader.item) {
@@ -1005,15 +1004,6 @@ PanelWindow {
                                         if (NetworkService.wifiEnabled)
                                             NetworkService.scanWifi()
                                     }
-                                }
-                            }
-                            onIconClicked: (tab) => {
-                                controlCenterLoader.active = true
-                                if (controlCenterLoader.item) {
-                                    controlCenterLoader.item.triggerScreen = root.screen
-                                    controlCenterLoader.item.openWithTab(tab)
-                                    if (NetworkService.wifiEnabled)
-                                        NetworkService.scanWifi()
                                 }
                             }
                         }

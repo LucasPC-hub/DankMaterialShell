@@ -20,32 +20,32 @@ Rectangle {
         const menuWidth = 160
         wifiContextMenuWindow.visible = true
         Qt.callLater(() => {
-                         const menuHeight = wifiMenuColumn.implicitHeight + Theme.spacingS * 2
-                         let finalX = x - menuWidth / 2
-                         let finalY = y + 4
-                         finalX = Math.max(
-                             Theme.spacingS, Math.min(
-                                 finalX,
-                                 parentItem.width - menuWidth - Theme.spacingS))
-                         finalY = Math.max(
-                             Theme.spacingS, Math.min(
-                                 finalY,
-                                 parentItem.height - menuHeight - Theme.spacingS))
-                         if (finalY + menuHeight > parentItem.height - Theme.spacingS) {
-                             finalY = y - menuHeight - 4
-                             finalY = Math.max(Theme.spacingS, finalY)
-                         }
-                         wifiContextMenuWindow.x = finalX
-                         wifiContextMenuWindow.y = finalY
-                         wifiContextMenuWindow.menuVisible = true
-                     })
+            const menuHeight = wifiMenuColumn.implicitHeight + Theme.spacingS * 2
+            let finalX = x - menuWidth / 2
+            let finalY = y + 4
+            finalX = Math.max(
+                Theme.spacingS,
+                Math.min(finalX,
+                    parentItem.width - menuWidth - Theme.spacingS))
+            finalY = Math.max(
+                Theme.spacingS,
+                Math.min(finalY,
+                    parentItem.height - menuHeight - Theme.spacingS))
+            if (finalY + menuHeight > parentItem.height - Theme.spacingS) {
+                finalY = y - menuHeight - 4
+                finalY = Math.max(Theme.spacingS, finalY)
+            }
+            wifiContextMenuWindow.x = finalX
+            wifiContextMenuWindow.y = finalY
+            wifiContextMenuWindow.menuVisible = true
+        })
     }
 
     function hide() {
         wifiContextMenuWindow.menuVisible = false
         Qt.callLater(() => {
-                         wifiContextMenuWindow.visible = false
-                     })
+            wifiContextMenuWindow.visible = false
+        })
     }
 
     visible: false
@@ -53,8 +53,7 @@ Rectangle {
     height: wifiMenuColumn.implicitHeight + Theme.spacingS * 2
     radius: Theme.cornerRadius
     color: Theme.popupBackground()
-    border.color: Qt.rgba(Theme.outline.r, Theme.outline.g,
-                          Theme.outline.b, 0.08)
+    border.color: Qt.rgba(Theme.outline.r, Theme.outline.g, Theme.outline.b, 0.08)
     border.width: 1
     z: 1000
     opacity: menuVisible ? 1 : 0
@@ -87,9 +86,9 @@ Rectangle {
             height: 32
             radius: Theme.cornerRadius
             color: connectWifiArea.containsMouse ? Qt.rgba(Theme.primary.r,
-                                                           Theme.primary.g,
-                                                           Theme.primary.b,
-                                                           0.12) : "transparent"
+                Theme.primary.g,
+                Theme.primary.b,
+                0.12) : "transparent"
 
             Row {
                 anchors.left: parent.left
@@ -99,7 +98,7 @@ Rectangle {
 
                 DankIcon {
                     name: wifiContextMenuWindow.networkData
-                          && wifiContextMenuWindow.networkData.connected ? "wifi_off" : "wifi"
+                        && wifiContextMenuWindow.networkData.connected ? "wifi_off" : "wifi"
                     size: Theme.iconSize - 2
                     color: Theme.surfaceText
                     opacity: 0.7
@@ -108,7 +107,7 @@ Rectangle {
 
                 StyledText {
                     text: wifiContextMenuWindow.networkData
-                          && wifiContextMenuWindow.networkData.connected ? "Disconnect" : "Connect"
+                        && wifiContextMenuWindow.networkData.connected ? "Disconnect" : "Connect"
                     font.pixelSize: Theme.fontSizeSmall
                     color: Theme.surfaceText
                     font.weight: Font.Normal
@@ -129,15 +128,16 @@ Rectangle {
                         } else {
                             if (wifiContextMenuWindow.networkData.saved) {
                                 NetworkService.connectToWifi(
-                                            wifiContextMenuWindow.networkData.ssid)
+                                    wifiContextMenuWindow.networkData.ssid)
                             } else if (wifiContextMenuWindow.networkData.secured) {
                                 if (wifiPasswordModalRef) {
-                                    wifiPasswordModalRef.show(
-                                                wifiContextMenuWindow.networkData.ssid)
+                                    wifiPasswordModalRef.wifiPasswordSSID = wifiContextMenuWindow.networkData.ssid
+                                    wifiPasswordModalRef.wifiPasswordInput = ""
+                                    wifiPasswordModalRef.wifiPasswordModalVisible = true
                                 }
                             } else {
                                 NetworkService.connectToWifi(
-                                            wifiContextMenuWindow.networkData.ssid)
+                                    wifiContextMenuWindow.networkData.ssid)
                             }
                         }
                     }
@@ -163,8 +163,7 @@ Rectangle {
                 anchors.centerIn: parent
                 width: parent.width
                 height: 1
-                color: Qt.rgba(Theme.outline.r, Theme.outline.g,
-                               Theme.outline.b, 0.2)
+                color: Qt.rgba(Theme.outline.r, Theme.outline.g, Theme.outline.b, 0.2)
             }
         }
 
@@ -173,12 +172,12 @@ Rectangle {
             height: 32
             radius: Theme.cornerRadius
             color: forgetWifiArea.containsMouse ? Qt.rgba(Theme.error.r,
-                                                          Theme.error.g,
-                                                          Theme.error.b,
-                                                          0.12) : "transparent"
+                Theme.error.g,
+                Theme.error.b,
+                0.12) : "transparent"
             visible: wifiContextMenuWindow.networkData
-                     && (wifiContextMenuWindow.networkData.saved
-                         || wifiContextMenuWindow.networkData.connected)
+                && (wifiContextMenuWindow.networkData.saved
+                    || wifiContextMenuWindow.networkData.connected)
 
             Row {
                 anchors.left: parent.left
@@ -212,7 +211,7 @@ Rectangle {
                 onClicked: {
                     if (wifiContextMenuWindow.networkData)
                         NetworkService.forgetWifiNetwork(
-                                    wifiContextMenuWindow.networkData.ssid)
+                            wifiContextMenuWindow.networkData.ssid)
 
                     wifiContextMenuWindow.hide()
                 }
@@ -231,9 +230,9 @@ Rectangle {
             height: 32
             radius: Theme.cornerRadius
             color: infoWifiArea.containsMouse ? Qt.rgba(Theme.primary.r,
-                                                        Theme.primary.g,
-                                                        Theme.primary.b,
-                                                        0.12) : "transparent"
+                Theme.primary.g,
+                Theme.primary.b,
+                0.12) : "transparent"
 
             Row {
                 anchors.left: parent.left
@@ -265,11 +264,10 @@ Rectangle {
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
-                    if (wifiContextMenuWindow.networkData
-                            && networkInfoModalRef)
+                    if (wifiContextMenuWindow.networkData && networkInfoModalRef)
                         networkInfoModalRef.showNetworkInfo(
-                                    wifiContextMenuWindow.networkData.ssid,
-                                    wifiContextMenuWindow.networkData)
+                            wifiContextMenuWindow.networkData.ssid,
+                            wifiContextMenuWindow.networkData)
 
                     wifiContextMenuWindow.hide()
                 }

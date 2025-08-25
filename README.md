@@ -9,7 +9,7 @@
 
 </div>
 
-A modern Wayland desktop shell built with [Quickshell](https://quickshell.org/) and designed for the [niri](https://github.com/YaLTeR/niri) and [Hyprland](https://hyprland.org/) compositors. Features Material 3 design principles with a heavy focus on functionality and customizability.
+A modern Wayland desktop shell built with [Quickshell](https://quickshell.org/) and designed specifically for the [niri](https://github.com/YaLTeR/niri) compositor. Features Material 3 design principles with a heavy focus on functionality and customizability.
 
 ## Screenshots
 
@@ -102,41 +102,9 @@ https://github.com/user-attachments/assets/5ad934bb-e7aa-4c04-8d40-149181bd2d29
 
 ## Installation
 
-### Compositor Setup
-
-DankMaterialShell supports both **niri** and **Hyprland** compositors:
-
-**Niri**:
-```bash
-# Arch Linux
-paru -S niri-git
-
-# Fedora  
-sudo dnf copr enable alebastr/niri && sudo dnf install niri
-```
-
-For detailed niri installation instructions, see the [niri Getting Started guide](https://yalter.github.io/niri/Getting-Started.html).
-
-**Hyprland**:
-```bash
-# Arch Linux
-sudo pacman -S hyprland
-
-# Or from AUR for latest
-paru -S hyprland-git
-
-# Fedora
-sudo dnf install hyprland
-
-# Or use Copr for latest builds
-sudo dnf copr enable solopasha/hyprland && sudo dnf install hyprland
-```
-
-For detailed Hyprland installation instructions, see the [Hyprland wiki](https://wiki.hypr.land/Getting-Started/Installation/).
-
 ### Quick Start
 
-\*If you do not already have niri or Hyprland, see the Compositor Setup section below
+\*If you do not already have niri, see [#]
 
 **Dependencies:**
 
@@ -321,47 +289,6 @@ binds {
 }
 ```
 
-### Hyprland Integration
-
-Add to your Hyprland config (`~/.config/hypr/hyprland.conf`):
-
-```bash
-# Required for clipboard history integration
-exec-once = bash -c "wl-paste --watch cliphist store &"
-
-# Recommended (must install polkit-mate beforehand) for elevation prompts  
-exec-once = /usr/lib/mate-polkit/polkit-mate-authentication-agent-1
-# This may be a different path on different distributions, the above is for the arch linux mate-polkit package
-
-# Starts DankShell
-exec-once = qs -c DankMaterialShell
-
-# Dank keybinds
-# 1. These should not be in conflict with any pre-existing keybindings
-# 2. You need to merge them with your existing config if you want to use these
-# 3. You can change the keys to whatever you want, if you prefer something different
-# 4. For the increment/decrement ones you can change the steps to whatever you like too
-
-# Application and system controls
-bind = SUPER, Space, exec, qs -c DankMaterialShell ipc call spotlight toggle
-bind = SUPER, V, exec, qs -c DankMaterialShell ipc call clipboard toggle
-bind = SUPER, M, exec, qs -c DankMaterialShell ipc call processlist toggle
-bind = SUPER, N, exec, qs -c DankMaterialShell ipc call notifications toggle
-bind = SUPER, comma, exec, qs -c DankMaterialShell ipc call settings toggle
-bind = SUPERALT, L, exec, qs -c DankMaterialShell ipc call lock lock
-
-# Audio controls (function keys)
-bindl = , XF86AudioRaiseVolume, exec, qs -c DankMaterialShell ipc call audio increment 3
-bindl = , XF86AudioLowerVolume, exec, qs -c DankMaterialShell ipc call audio decrement 3
-bindl = , XF86AudioMute, exec, qs -c DankMaterialShell ipc call audio mute
-bindl = , XF86AudioMicMute, exec, qs -c DankMaterialShell ipc call audio micmute
-
-# Brightness controls (function keys)
-bindl = , XF86MonBrightnessUp, exec, qs -c DankMaterialShell ipc call brightness increment 5 ""
-# You can override the default device for e.g. keyboards by adding the device name to the last param
-bindl = , XF86MonBrightnessDown, exec, qs -c DankMaterialShell ipc call brightness decrement 5 ""
-```
-
 ### IPC Commands
 
 Control everything from the command line, or via keybinds. For comprehensive documentation of all available IPC commands, see [docs/IPC.md](docs/IPC.md).
@@ -390,12 +317,6 @@ qs -c DankMaterialShell ipc call mpris next
 ```
 
 ## Theming
-
-### Custom Themes
-
-DankMaterialShell supports custom color themes! You can create your own Material Design 3 color schemes or use pre-made themes like Cyberpunk Electric, Hotline Miami, and Miami Vice.
-
-For detailed instructions on creating and using custom themes, see [docs/CUSTOM_THEMES.md](docs/CUSTOM_THEMES.md).
 
 ### System App Integration
 

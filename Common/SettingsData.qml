@@ -10,9 +10,8 @@ pragma ComponentBehavior
 Singleton {
     id: root
 
-    // Theme settings
-    property string currentThemeName: "blue"
-    property string customThemeFile: ""
+    property int themeIndex: 0
+    property bool themeIsDynamic: false
     property real topBarTransparency: 0.75
     property real topBarWidgetTransparency: 0.85
     property real popupTransparency: 0.92
@@ -40,9 +39,6 @@ Singleton {
     property bool showNotificationButton: true
     property bool showBattery: true
     property bool showControlCenterButton: true
-    property bool controlCenterShowNetworkIcon: true
-    property bool controlCenterShowBluetoothIcon: true
-    property bool controlCenterShowAudioIcon: true
     property bool showWorkspaceIndex: false
     property bool showWorkspacePadding: false
     property var workspaceNameIcons: ({})
@@ -66,7 +62,6 @@ Singleton {
     property string systemDefaultIconTheme: ""
     property bool qt5ctAvailable: false
     property bool qt6ctAvailable: false
-    property bool gtkAvailable: false
     property bool useOSLogo: false
     property string osLogoColorOverride: ""
     property real osLogoBrightness: 0.5
@@ -116,19 +111,9 @@ Singleton {
         try {
             if (content && content.trim()) {
                 var settings = JSON.parse(content)
-                // Auto-migrate from old theme system
-                if (settings.themeIndex !== undefined || settings.themeIsDynamic !== undefined) {
-                    const themeNames = ["blue", "deepBlue", "purple", "green", "orange", "red", "cyan", "pink", "amber", "coral"]
-                    if (settings.themeIsDynamic) {
-                        currentThemeName = "dynamic"
-                    } else if (settings.themeIndex >= 0 && settings.themeIndex < themeNames.length) {
-                        currentThemeName = themeNames[settings.themeIndex]
-                    }
-                    console.log("Auto-migrated theme from index", settings.themeIndex, "to", currentThemeName)
-                } else {
-                    currentThemeName = settings.currentThemeName !== undefined ? settings.currentThemeName : "blue"
-                }
-                customThemeFile = settings.customThemeFile !== undefined ? settings.customThemeFile : ""
+                themeIndex = settings.themeIndex !== undefined ? settings.themeIndex : 0
+                themeIsDynamic = settings.themeIsDynamic
+                        !== undefined ? settings.themeIsDynamic : false
                 topBarTransparency = settings.topBarTransparency
                         !== undefined ? (settings.topBarTransparency
                                          > 1 ? settings.topBarTransparency
@@ -184,12 +169,6 @@ Singleton {
                 showBattery = settings.showBattery !== undefined ? settings.showBattery : true
                 showControlCenterButton = settings.showControlCenterButton
                         !== undefined ? settings.showControlCenterButton : true
-                controlCenterShowNetworkIcon = settings.controlCenterShowNetworkIcon 
-                        !== undefined ? settings.controlCenterShowNetworkIcon : true
-                controlCenterShowBluetoothIcon = settings.controlCenterShowBluetoothIcon 
-                        !== undefined ? settings.controlCenterShowBluetoothIcon : true
-                controlCenterShowAudioIcon = settings.controlCenterShowAudioIcon 
-                        !== undefined ? settings.controlCenterShowAudioIcon : true
                 showWorkspaceIndex = settings.showWorkspaceIndex
                         !== undefined ? settings.showWorkspaceIndex : false
                 showWorkspacePadding = settings.showWorkspacePadding
@@ -290,8 +269,8 @@ Singleton {
 
     function saveSettings() {
         settingsFile.setText(JSON.stringify({
-                                                "currentThemeName": currentThemeName,
-                                                "customThemeFile": customThemeFile,
+                                                "themeIndex": themeIndex,
+                                                "themeIsDynamic": themeIsDynamic,
                                                 "topBarTransparency": topBarTransparency,
                                                 "topBarWidgetTransparency": topBarWidgetTransparency,
                                                 "popupTransparency": popupTransparency,
@@ -320,9 +299,6 @@ Singleton {
                                                 "showNotificationButton": showNotificationButton,
                                                 "showBattery": showBattery,
                                                 "showControlCenterButton": showControlCenterButton,
-                                                "controlCenterShowNetworkIcon": controlCenterShowNetworkIcon,
-                                                "controlCenterShowBluetoothIcon": controlCenterShowBluetoothIcon,
-                                                "controlCenterShowAudioIcon": controlCenterShowAudioIcon,
                                                 "showWorkspaceIndex": showWorkspaceIndex,
                                                 "showWorkspacePadding": showWorkspacePadding,
                                                 "workspaceNameIcons": workspaceNameIcons,
@@ -393,7 +369,7 @@ Singleton {
     }
 
     function hasNamedWorkspaces() {
-        if (typeof NiriService === "undefined" || !CompositorService.isNiri)
+        if (typeof NiriService === "undefined" || !NiriService.niriAvailable)
             return false
 
         for (var i = 0; i < NiriService.allWorkspaces.length; i++) {
@@ -406,7 +382,7 @@ Singleton {
 
     function getNamedWorkspaces() {
         var namedWorkspaces = []
-        if (typeof NiriService === "undefined" || !CompositorService.isNiri)
+        if (typeof NiriService === "undefined" || !NiriService.niriAvailable)
             return namedWorkspaces
 
         for (var i = 0; i < NiriService.allWorkspaces.length; i++) {
@@ -450,21 +426,18 @@ Singleton {
 
     function applyStoredTheme() {
         if (typeof Theme !== "undefined")
-            Theme.switchTheme(currentThemeName, false)
+            Theme.switchTheme(themeIndex, themeIsDynamic, false)
         else
             Qt.callLater(() => {
                              if (typeof Theme !== "undefined")
-                                 Theme.switchTheme(currentThemeName, false)
+                             Theme.switchTheme(themeIndex,
+                                               themeIsDynamic, false)
                          })
     }
 
-    function setTheme(themeName) {
-        currentThemeName = themeName
-        saveSettings()
-    }
-
-    function setCustomThemeFile(filePath) {
-        customThemeFile = filePath
+    function setTheme(index, isDynamic) {
+        themeIndex = index
+        themeIsDynamic = isDynamic
         saveSettings()
     }
 
@@ -587,21 +560,6 @@ Singleton {
 
     function setShowControlCenterButton(enabled) {
         showControlCenterButton = enabled
-        saveSettings()
-    }
-
-    function setControlCenterShowNetworkIcon(enabled) {
-        controlCenterShowNetworkIcon = enabled
-        saveSettings()
-    }
-
-    function setControlCenterShowBluetoothIcon(enabled) {
-        controlCenterShowBluetoothIcon = enabled
-        saveSettings()
-    }
-
-    function setControlCenterShowAudioIcon(enabled) {
-        controlCenterShowAudioIcon = enabled
         saveSettings()
     }
 
@@ -732,8 +690,9 @@ Singleton {
         updateGtkIconTheme(themeName)
         updateQtIconTheme(themeName)
         saveSettings()
-        if (typeof Theme !== "undefined" && Theme.currentTheme === Theme.dynamic)
-            Theme.generateSystemThemes()
+        if (typeof Theme !== "undefined" && Theme.isDynamicTheme
+                && typeof Colors !== "undefined")
+            Colors.generateSystemThemes()
     }
 
     function updateGtkIconTheme(themeName) {
@@ -817,17 +776,11 @@ Singleton {
     function setGtkThemingEnabled(enabled) {
         gtkThemingEnabled = enabled
         saveSettings()
-        if (enabled && typeof Theme !== "undefined") {
-            Theme.generateSystemThemesFromCurrentTheme()
-        }
     }
 
     function setQtThemingEnabled(enabled) {
         qtThemingEnabled = enabled
         saveSettings()
-        if (enabled && typeof Theme !== "undefined") {
-            Theme.generateSystemThemesFromCurrentTheme()
-        }
     }
 
     function setShowDock(enabled) {
@@ -982,7 +935,7 @@ Singleton {
     Process {
         id: qtToolsDetectionProcess
 
-        command: ["sh", "-c", "echo -n 'qt5ct:'; command -v qt5ct >/dev/null && echo 'true' || echo 'false'; echo -n 'qt6ct:'; command -v qt6ct >/dev/null && echo 'true' || echo 'false'; echo -n 'gtk:'; (command -v gsettings >/dev/null || command -v dconf >/dev/null) && echo 'true' || echo 'false'"]
+        command: ["sh", "-c", "echo -n 'qt5ct:'; command -v qt5ct >/dev/null && echo 'true' || echo 'false'; echo -n 'qt6ct:'; command -v qt6ct >/dev/null && echo 'true' || echo 'false'"]
         running: false
 
         stdout: StdioCollector {
@@ -995,8 +948,6 @@ Singleton {
                             qt5ctAvailable = line.split(':')[1] === 'true'
                         else if (line.startsWith('qt6ct:'))
                             qt6ctAvailable = line.split(':')[1] === 'true'
-                        else if (line.startsWith('gtk:'))
-                            gtkAvailable = line.split(':')[1] === 'true'
                     }
                 }
             }

@@ -45,14 +45,6 @@ DankPopout {
     WlrLayershell.namespace: "quickshell-launcher"
     screen: triggerScreen
 
-    onOpened: {
-        Qt.callLater(() => {
-            if (contentLoader.item && contentLoader.item.searchField) {
-                contentLoader.item.searchField.forceActiveFocus()
-            }
-        })
-    }
-
     AppLauncher {
         id: appLauncher
 
@@ -67,8 +59,6 @@ DankPopout {
     content: Component {
         Rectangle {
             id: launcherPanel
-
-            property alias searchField: searchField
 
             color: Theme.popupBackground()
             radius: Theme.cornerRadius
@@ -110,6 +100,10 @@ DankPopout {
 
                 anchors.fill: parent
                 focus: true
+                Component.onCompleted: {
+                    if (appDrawerPopout.shouldBeVisible)
+                        forceActiveFocus()
+                }
                 Keys.onPressed: function (event) {
                     if (event.key === Qt.Key_Escape) {
                         appDrawerPopout.close()
@@ -222,10 +216,18 @@ DankPopout {
                                 event.accepted = false
                             }
                         }
+                        Component.onCompleted: {
+                            if (appDrawerPopout.shouldBeVisible)
+                                searchField.forceActiveFocus()
+                        }
 
                         Connections {
                             function onShouldBeVisibleChanged() {
-                                if (!appDrawerPopout.shouldBeVisible)
+                                if (appDrawerPopout.shouldBeVisible)
+                                    Qt.callLater(function () {
+                                        searchField.forceActiveFocus()
+                                    })
+                                else
                                     searchField.clearFocus()
                             }
 

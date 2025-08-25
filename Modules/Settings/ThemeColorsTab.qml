@@ -1,8 +1,6 @@
 import QtQuick
 import QtQuick.Controls
-import Quickshell.Io
 import qs.Common
-import qs.Modals
 import qs.Services
 import qs.Widgets
 
@@ -140,7 +138,7 @@ Item {
                         spacing: Theme.spacingS
 
                         StyledText {
-                            text: "Current Theme: " + (Theme.currentTheme === Theme.dynamic ? "Dynamic" : Theme.getThemeColors(Theme.currentThemeName).name)
+                            text: "Current Theme: " + (Theme.isDynamicTheme ? "Auto" : (Theme.currentThemeIndex < Theme.themes.length ? Theme.themes[Theme.currentThemeIndex].name : "Blue"))
                             font.pixelSize: Theme.fontSizeMedium
                             color: Theme.surfaceText
                             font.weight: Font.Medium
@@ -149,22 +147,12 @@ Item {
 
                         StyledText {
                             text: {
-                                if (Theme.currentTheme === Theme.dynamic)
+                                if (Theme.isDynamicTheme)
                                     return "Wallpaper-based dynamic colors"
 
-                                var descriptions = {
-                                    "blue": "Material blue inspired by modern interfaces",
-                                    "deepBlue": "Deep blue inspired by material 3",
-                                    "purple": "Rich purple tones for elegance",
-                                    "green": "Natural green for productivity",
-                                    "orange": "Energetic orange for creativity",
-                                    "red": "Bold red for impact",
-                                    "cyan": "Cool cyan for tranquility",
-                                    "pink": "Vibrant pink for expression",
-                                    "amber": "Warm amber for comfort",
-                                    "coral": "Soft coral for gentle warmth"
-                                }
-                                return descriptions[Theme.currentThemeName] || "Select a theme"
+                                var descriptions = ["Material blue inspired by modern interfaces", "Deep blue inspired by material 3", "Rich purple tones for BB elegance", "Natural green for productivity", "Energetic orange for creativity", "Bold red for impact", "Cool cyan for tranquility", "Vibrant pink for expression", "Warm amber for comfort", "Soft coral for gentle warmth"]
+                                return descriptions[Theme.currentThemeIndex]
+                                        || "Select a theme"
                             }
                             font.pixelSize: Theme.fontSizeSmall
                             color: Theme.surfaceVariantText
@@ -181,21 +169,21 @@ Item {
 
                         Row {
                             spacing: Theme.spacingM
+                            anchors.horizontalCenter: parent.horizontalCenter
 
                             Repeater {
-                                model: Theme.availableThemeNames.slice(0, 5)
+                                model: 5
 
                                 Rectangle {
-                                    property string themeName: modelData
                                     width: 32
                                     height: 32
                                     radius: 16
-                                    color: Theme.getThemeColors(themeName).primary
+                                    color: Theme.themes[index].primary
                                     border.color: Theme.outline
-                                    border.width: (Theme.currentThemeName === themeName
-                                                   && Theme.currentTheme !== Theme.dynamic) ? 2 : 1
-                                    scale: (Theme.currentThemeName === themeName
-                                            && Theme.currentTheme !== Theme.dynamic) ? 1.1 : 1
+                                    border.width: (Theme.currentThemeIndex === index
+                                                   && !Theme.isDynamicTheme) ? 2 : 1
+                                    scale: (Theme.currentThemeIndex === index
+                                            && !Theme.isDynamicTheme) ? 1.1 : 1
 
                                     Rectangle {
                                         width: nameText.contentWidth + Theme.spacingS * 2
@@ -212,7 +200,7 @@ Item {
                                         StyledText {
                                             id: nameText
 
-                                            text: Theme.getThemeColors(themeName).name
+                                            text: Theme.themes[index].name
                                             font.pixelSize: Theme.fontSizeSmall
                                             color: Theme.surfaceText
                                             anchors.centerIn: parent
@@ -226,7 +214,7 @@ Item {
                                         hoverEnabled: true
                                         cursorShape: Qt.PointingHandCursor
                                         onClicked: {
-                                            Theme.switchTheme(themeName)
+                                            Theme.switchTheme(index, false)
                                         }
                                     }
 
@@ -249,21 +237,22 @@ Item {
 
                         Row {
                             spacing: Theme.spacingM
+                            anchors.horizontalCenter: parent.horizontalCenter
 
                             Repeater {
-                                model: Theme.availableThemeNames.slice(5, 10)
+                                model: 5
 
                                 Rectangle {
-                                    property string themeName: modelData
+                                    property int themeIndex: index + 5
 
                                     width: 32
                                     height: 32
                                     radius: 16
-                                    color: Theme.getThemeColors(themeName).primary
+                                    color: themeIndex < Theme.themes.length ? Theme.themes[themeIndex].primary : "transparent"
                                     border.color: Theme.outline
-                                    border.width: Theme.currentThemeName === themeName ? 2 : 1
-                                    visible: true
-                                    scale: Theme.currentThemeName === themeName ? 1.1 : 1
+                                    border.width: Theme.currentThemeIndex === themeIndex ? 2 : 1
+                                    visible: themeIndex < Theme.themes.length
+                                    scale: Theme.currentThemeIndex === themeIndex ? 1.1 : 1
 
                                     Rectangle {
                                         width: nameText2.contentWidth + Theme.spacingS * 2
@@ -276,11 +265,12 @@ Item {
                                         anchors.bottomMargin: Theme.spacingXS
                                         anchors.horizontalCenter: parent.horizontalCenter
                                         visible: mouseArea2.containsMouse
+                                                 && themeIndex < Theme.themes.length
 
                                         StyledText {
                                             id: nameText2
 
-                                            text: Theme.getThemeColors(themeName).name
+                                            text: themeIndex < Theme.themes.length ? Theme.themes[themeIndex].name : ""
                                             font.pixelSize: Theme.fontSizeSmall
                                             color: Theme.surfaceText
                                             anchors.centerIn: parent
@@ -294,7 +284,8 @@ Item {
                                         hoverEnabled: true
                                         cursorShape: Qt.PointingHandCursor
                                         onClicked: {
-                                            Theme.switchTheme(themeName)
+                                            if (themeIndex < Theme.themes.length)
+                                                Theme.switchTheme(themeIndex)
                                         }
                                     }
 
@@ -320,44 +311,41 @@ Item {
                             height: Theme.spacingM
                         }
 
-                        Row {
+                        Rectangle {
+                            width: 120
+                            height: 40
+                            radius: 20
                             anchors.horizontalCenter: parent.horizontalCenter
-                            spacing: Theme.spacingL
+                            color: {
+                                if (ToastService.wallpaperErrorStatus === "error"
+                                        || ToastService.wallpaperErrorStatus === "matugen_missing")
+                                    return Qt.rgba(Theme.error.r,
+                                                   Theme.error.g,
+                                                   Theme.error.b, 0.12)
+                                else
+                                    return Qt.rgba(Theme.surfaceVariant.r,
+                                                   Theme.surfaceVariant.g,
+                                                   Theme.surfaceVariant.b, 0.3)
+                            }
+                            border.color: {
+                                if (ToastService.wallpaperErrorStatus === "error"
+                                        || ToastService.wallpaperErrorStatus === "matugen_missing")
+                                    return Qt.rgba(Theme.error.r,
+                                                   Theme.error.g,
+                                                   Theme.error.b, 0.5)
+                                else if (Theme.isDynamicTheme)
+                                    return Theme.primary
+                                else
+                                    return Theme.outline
+                            }
+                            border.width: Theme.isDynamicTheme ? 2 : 1
+                            scale: Theme.isDynamicTheme ? 1.1 : (autoMouseArea.containsMouse ? 1.02 : 1)
 
-                            Rectangle {
-                                width: 120
-                                height: 40
-                                radius: 20
-                                color: {
-                                    if (ToastService.wallpaperErrorStatus === "error"
-                                            || ToastService.wallpaperErrorStatus === "matugen_missing")
-                                        return Qt.rgba(Theme.error.r,
-                                                       Theme.error.g,
-                                                       Theme.error.b, 0.12)
-                                    else
-                                        return Qt.rgba(Theme.surfaceVariant.r,
-                                                       Theme.surfaceVariant.g,
-                                                       Theme.surfaceVariant.b, 0.3)
-                                }
-                                border.color: {
-                                    if (ToastService.wallpaperErrorStatus === "error"
-                                            || ToastService.wallpaperErrorStatus === "matugen_missing")
-                                        return Qt.rgba(Theme.error.r,
-                                                       Theme.error.g,
-                                                       Theme.error.b, 0.5)
-                                    else if (Theme.currentThemeName === "dynamic")
-                                        return Theme.primary
-                                    else
-                                        return Theme.outline
-                                }
-                                border.width: (Theme.currentThemeName === "dynamic") ? 2 : 1
-                                scale: (Theme.currentThemeName === "dynamic") ? 1.1 : (autoMouseArea.containsMouse ? 1.02 : 1)
+                            Row {
+                                anchors.centerIn: parent
+                                spacing: Theme.spacingS
 
-                                Row {
-                                    anchors.centerIn: parent
-                                    spacing: Theme.spacingS
-
-                                    DankIcon {
+                                DankIcon {
                                     name: {
                                         if (ToastService.wallpaperErrorStatus === "error"
                                                 || ToastService.wallpaperErrorStatus
@@ -416,7 +404,7 @@ Item {
                                         ToastService.showError(
                                                     "Wallpaper processing failed - check wallpaper path")
                                     else
-                                        Theme.switchTheme(Theme.dynamic)
+                                        Theme.switchTheme(10, true)
                                 }
                             }
 
@@ -431,7 +419,7 @@ Item {
                                 anchors.bottomMargin: Theme.spacingS
                                 anchors.horizontalCenter: parent.horizontalCenter
                                 visible: autoMouseArea.containsMouse
-                                         && (Theme.currentTheme !== Theme.dynamic
+                                         && (!Theme.isDynamicTheme
                                              || ToastService.wallpaperErrorStatus === "error"
                                              || ToastService.wallpaperErrorStatus
                                              === "matugen_missing")
@@ -477,91 +465,6 @@ Item {
                                 }
                             }
                         }
-
-                        Rectangle {
-                            width: 120
-                            height: 40
-                            radius: 20
-                            color: Qt.rgba(Theme.surfaceVariant.r, Theme.surfaceVariant.g, Theme.surfaceVariant.b, 0.3)
-                            border.color: (Theme.currentThemeName === "custom") ? Theme.primary : Theme.outline
-                            border.width: (Theme.currentThemeName === "custom") ? 2 : 1
-                            scale: (Theme.currentThemeName === "custom") ? 1.1 : (customMouseArea.containsMouse ? 1.02 : 1)
-
-                            Row {
-                                anchors.centerIn: parent
-                                spacing: Theme.spacingS
-
-                                DankIcon {
-                                    name: "folder_open"
-                                    size: 16
-                                    color: Theme.surfaceText
-                                    anchors.verticalCenter: parent.verticalCenter
-                                }
-
-                                StyledText {
-                                    text: "Custom"
-                                    font.pixelSize: Theme.fontSizeMedium
-                                    color: Theme.surfaceText
-                                    font.weight: Font.Medium
-                                    anchors.verticalCenter: parent.verticalCenter
-                                }
-                            }
-
-                            MouseArea {
-                                id: customMouseArea
-
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    fileBrowserModal.open()
-                                }
-                            }
-
-                            Rectangle {
-                                width: customTooltipText.contentWidth + Theme.spacingM * 2
-                                height: customTooltipText.contentHeight + Theme.spacingS * 2
-                                color: Theme.surfaceContainer
-                                border.color: Theme.outline
-                                border.width: 1
-                                radius: Theme.cornerRadius
-                                anchors.bottom: parent.top
-                                anchors.bottomMargin: Theme.spacingS
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                visible: customMouseArea.containsMouse
-
-                                StyledText {
-                                    id: customTooltipText
-                                    text: {
-                                        if (Theme.currentThemeName === "custom")
-                                            return SettingsData.customThemeFile || "Custom theme loaded"
-                                        else
-                                            return "Load custom theme from JSON file"
-                                    }
-                                    font.pixelSize: Theme.fontSizeSmall
-                                    color: Theme.surfaceText
-                                    anchors.centerIn: parent
-                                    wrapMode: Text.WordWrap
-                                    width: Math.min(implicitWidth, 250)
-                                    horizontalAlignment: Text.AlignHCenter
-                                }
-                            }
-
-                            Behavior on scale {
-                                NumberAnimation {
-                                    duration: Theme.shortDuration
-                                    easing.type: Theme.emphasizedEasing
-                                }
-                            }
-
-                            Behavior on border.width {
-                                NumberAnimation {
-                                    duration: Theme.shortDuration
-                                    easing.type: Theme.emphasizedEasing
-                                }
-                            }
-                        }
-                        } // Close Row
                     }
                 }
             }
@@ -713,7 +616,7 @@ Item {
                     StyledText {
                         id: warningText
 
-                        text: "System app theming will generate GTK and Qt themes based on your selected theme colors"
+                        text: "Changing these settings will manipulate GTK and Qt configurations on the system"
                         font.pixelSize: Theme.fontSizeSmall
                         color: Theme.warning
                         wrapMode: Text.WordWrap
@@ -788,7 +691,7 @@ Item {
                 border.color: Qt.rgba(Theme.outline.r, Theme.outline.g,
                                       Theme.outline.b, 0.2)
                 border.width: 1
-                visible: Theme.currentTheme === Theme.dynamic && Theme.matugenAvailable
+                visible: Theme.isDynamicTheme && Colors.matugenAvailable
 
                 Column {
                     id: systemThemingSection
@@ -820,49 +723,27 @@ Item {
                     DankToggle {
                         width: parent.width
                         text: "Theme GTK Applications"
-                        description: SettingsData.gtkAvailable ? "File managers, text editors, and system dialogs will match your theme" : "GTK theming not available (install gsettings)"
-                        enabled: SettingsData.gtkAvailable
-                        checked: SettingsData.gtkAvailable
+                        description: Colors.gtkThemingEnabled ? "File managers, text editors, and system dialogs will match your theme" : "GTK theming not available (install gsettings)"
+                        enabled: Colors.gtkThemingEnabled
+                        checked: Colors.gtkThemingEnabled
                                  && SettingsData.gtkThemingEnabled
                         onToggled: function (checked) {
                             SettingsData.setGtkThemingEnabled(checked)
-                            Theme.forceGenerateSystemThemes()
                         }
                     }
 
                     DankToggle {
                         width: parent.width
                         text: "Theme Qt Applications"
-                        description: (SettingsData.qt5ctAvailable || SettingsData.qt6ctAvailable) ? "Qt applications will match your theme colors" : "Qt theming not available (install qt5ct or qt6ct)"
-                        enabled: (SettingsData.qt5ctAvailable || SettingsData.qt6ctAvailable)
-                        checked: (SettingsData.qt5ctAvailable || SettingsData.qt6ctAvailable)
+                        description: Colors.qtThemingEnabled ? "Qt applications will match your theme colors" : "Qt theming not available (install qt5ct or qt6ct)"
+                        enabled: Colors.qtThemingEnabled
+                        checked: Colors.qtThemingEnabled
                                  && SettingsData.qtThemingEnabled
                         onToggled: function (checked) {
                             SettingsData.setQtThemingEnabled(checked)
-                            Theme.forceGenerateSystemThemes()
                         }
                     }
                 }
-            }
-        }
-    }
-
-    FileBrowserModal {
-        id: fileBrowserModal
-        browserTitle: "Select Custom Theme"
-        filterExtensions: ["*.json"]
-        showHiddenFiles: true
-
-        function selectCustomTheme() {
-            shouldBeVisible = true
-        }
-
-        onFileSelected: function(filePath) {
-            // Save the custom theme file path and switch to custom theme
-            if (filePath.endsWith(".json")) {
-                SettingsData.setCustomThemeFile(filePath)
-                Theme.switchTheme("custom")
-                close()
             }
         }
     }

@@ -184,11 +184,6 @@ Item {
             widgetObj.selectedGpuIndex = 0
             widgetObj.pciId = ""
         }
-        if (widgetId === "controlCenterButton") {
-            widgetObj.showNetworkIcon = true
-            widgetObj.showBluetoothIcon = true
-            widgetObj.showAudioIcon = true
-        }
 
         var widgets = []
         if (targetSection === "left") {
@@ -261,11 +256,6 @@ Item {
                         newWidget.pciId = widget.pciId
                     else if (widget.id === "gpuTemp")
                         newWidget.pciId = ""
-                    if (widget.id === "controlCenterButton") {
-                        newWidget.showNetworkIcon = widget.showNetworkIcon !== undefined ? widget.showNetworkIcon : true
-                        newWidget.showBluetoothIcon = widget.showBluetoothIcon !== undefined ? widget.showBluetoothIcon : true
-                        newWidget.showAudioIcon = widget.showAudioIcon !== undefined ? widget.showAudioIcon : true
-                    }
                     widgets[i] = newWidget
                 }
                 break
@@ -316,11 +306,6 @@ Item {
                         newWidget.selectedGpuIndex = widget.selectedGpuIndex
                     if (widget.pciId !== undefined)
                         newWidget.pciId = widget.pciId
-                    if (widget.id === "controlCenterButton") {
-                        newWidget.showNetworkIcon = widget.showNetworkIcon !== undefined ? widget.showNetworkIcon : true
-                        newWidget.showBluetoothIcon = widget.showBluetoothIcon !== undefined ? widget.showBluetoothIcon : true
-                        newWidget.showAudioIcon = widget.showAudioIcon !== undefined ? widget.showAudioIcon : true
-                    }
                     widgets[i] = newWidget
                 }
                 break
@@ -377,17 +362,6 @@ Item {
             SettingsData.setTopBarRightWidgets(widgets)
     }
 
-    function handleControlCenterSettingChanged(sectionId, widgetIndex, settingName, value) {
-        // Control Center settings are global, not per-widget instance
-        if (settingName === "showNetworkIcon") {
-            SettingsData.setControlCenterShowNetworkIcon(value)
-        } else if (settingName === "showBluetoothIcon") {
-            SettingsData.setControlCenterShowBluetoothIcon(value)
-        } else if (settingName === "showAudioIcon") {
-            SettingsData.setControlCenterShowAudioIcon(value)
-        }
-    }
-
     function getItemsForSection(sectionId) {
         var widgets = []
         var widgetData = []
@@ -406,9 +380,6 @@ Item {
                                === "string" ? undefined : widget.selectedGpuIndex
                                var widgetPciId = typeof widget
                                === "string" ? undefined : widget.pciId
-                               var widgetShowNetworkIcon = typeof widget === "string" ? undefined : widget.showNetworkIcon
-                               var widgetShowBluetoothIcon = typeof widget === "string" ? undefined : widget.showBluetoothIcon
-                               var widgetShowAudioIcon = typeof widget === "string" ? undefined : widget.showAudioIcon
                                var widgetDef = baseWidgetDefinitions.find(w => {
                                                                               return w.id === widgetId
                                                                           })
@@ -421,12 +392,6 @@ Item {
                                    item.selectedGpuIndex = widgetSelectedGpuIndex
                                    if (widgetPciId !== undefined)
                                    item.pciId = widgetPciId
-                                   if (widgetShowNetworkIcon !== undefined)
-                                   item.showNetworkIcon = widgetShowNetworkIcon
-                                   if (widgetShowBluetoothIcon !== undefined)
-                                   item.showBluetoothIcon = widgetShowBluetoothIcon
-                                   if (widgetShowAudioIcon !== undefined)
-                                   item.showAudioIcon = widgetShowAudioIcon
 
                                    widgets.push(item)
                                }
@@ -814,9 +779,6 @@ Item {
                                                           value)
                                                   }
                                               }
-                        onControlCenterSettingChanged: (sectionId, widgetIndex, settingName, value) => {
-                                                           handleControlCenterSettingChanged(sectionId, widgetIndex, settingName, value)
-                                                       }
                         onGpuSelectionChanged: (sectionId, widgetIndex, selectedIndex) => {
                                                    topBarTab.handleGpuSelectionChanged(
                                                        sectionId, widgetIndex,
@@ -884,9 +846,6 @@ Item {
                                                           value)
                                                   }
                                               }
-                        onControlCenterSettingChanged: (sectionId, widgetIndex, settingName, value) => {
-                                                           handleControlCenterSettingChanged(sectionId, widgetIndex, settingName, value)
-                                                       }
                         onGpuSelectionChanged: (sectionId, widgetIndex, selectedIndex) => {
                                                    topBarTab.handleGpuSelectionChanged(
                                                        sectionId, widgetIndex,
@@ -954,9 +913,6 @@ Item {
                                                           value)
                                                   }
                                               }
-                        onControlCenterSettingChanged: (sectionId, widgetIndex, settingName, value) => {
-                                                           handleControlCenterSettingChanged(sectionId, widgetIndex, settingName, value)
-                                                       }
                         onGpuSelectionChanged: (sectionId, widgetIndex, selectedIndex) => {
                                                    topBarTab.handleGpuSelectionChanged(
                                                        sectionId, widgetIndex,

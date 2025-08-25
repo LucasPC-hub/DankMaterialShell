@@ -14,6 +14,21 @@ Column {
     property var sortedWifiNetworks
     property var wifiPasswordModalRef
 
+    function getWiFiSignalIcon(signalStrength) {
+        switch (signalStrength) {
+            case "excellent":
+                return "wifi"
+            case "good":
+                return "wifi_2_bar"
+            case "fair":
+                return "wifi_1_bar"
+            case "poor":
+                return "signal_wifi_0_bar"
+            default:
+                return "wifi"
+        }
+    }
+
     anchors.top: parent.top
     anchors.topMargin: 100
     anchors.left: parent.left
@@ -44,10 +59,10 @@ Column {
             height: 28
             radius: 14
             color: refreshAreaSpan.containsMouse ? Qt.rgba(
-                                                       Theme.primary.r,
-                                                       Theme.primary.g,
-                                                       Theme.primary.b,
-                                                       0.12) : NetworkService.isScanning ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.06) : "transparent"
+                Theme.primary.r,
+                Theme.primary.g,
+                Theme.primary.b,
+                0.12) : NetworkService.isScanning ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.06) : "transparent"
 
             DankIcon {
                 id: refreshIconSpan
@@ -107,15 +122,15 @@ Column {
         WheelHandler {
             acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
             onWheel: event => {
-                         let delta = event.pixelDelta.y
-                         !== 0 ? event.pixelDelta.y * 1.8 : event.angleDelta.y / 120 * 60
-                         let newY = parent.contentY - delta
-                         newY = Math.max(
-                             0, Math.min(parent.contentHeight - parent.height,
-                                         newY))
-                         parent.contentY = newY
-                         event.accepted = true
-                     }
+                let delta = event.pixelDelta.y
+                    !== 0 ? event.pixelDelta.y * 1.8 : event.angleDelta.y / 120 * 60
+                let newY = parent.contentY - delta
+                newY = Math.max(0,
+                    Math.min(parent.contentHeight - parent.height,
+                        newY))
+                parent.contentY = newY
+                event.accepted = true
+            }
         }
 
         Column {
@@ -126,17 +141,17 @@ Column {
 
             Repeater {
                 model: NetworkService.wifiAvailable
-                       && NetworkService.wifiEnabled ? sortedWifiNetworks : []
+                    && NetworkService.wifiEnabled ? sortedWifiNetworks : []
 
                 Rectangle {
                     width: spanningNetworksColumn.width
                     height: 38
                     radius: Theme.cornerRadius
                     color: networkArea2.containsMouse ? Qt.rgba(
-                                                            Theme.primary.r,
-                                                            Theme.primary.g,
-                                                            Theme.primary.b,
-                                                            0.08) : modelData.connected ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.12) : "transparent"
+                        Theme.primary.r,
+                        Theme.primary.g,
+                        Theme.primary.b,
+                        0.08) : modelData.connected ? Qt.rgba(Theme.primary.r, Theme.primary.g, Theme.primary.b, 0.12) : "transparent"
                     border.color: modelData.connected ? Theme.primary : "transparent"
                     border.width: modelData.connected ? 1 : 0
 
@@ -150,7 +165,7 @@ Column {
 
                             anchors.left: parent.left
                             anchors.verticalCenter: parent.verticalCenter
-                            name: NetworkService.wifiSignalIcon
+                            name: getWiFiSignalIcon(modelData.signalStrength)
                             size: Theme.iconSize - 2
                             color: modelData.connected ? Theme.primary : Theme.surfaceText
                         }
@@ -179,32 +194,30 @@ Column {
                                         return "Connected"
 
                                     if (NetworkService.connectionStatus === "connecting"
-                                            && NetworkService.connectingSSID === modelData.ssid)
+                                        && NetworkService.connectingSSID === modelData.ssid)
                                         return "Connecting..."
 
                                     if (NetworkService.connectionStatus === "invalid_password"
-                                            && NetworkService.connectingSSID === modelData.ssid)
+                                        && NetworkService.connectingSSID === modelData.ssid)
                                         return "Invalid password"
 
                                     if (modelData.saved)
-                                        return "Saved"
-                                                + (modelData.secured ? " • Secured" : " • Open")
+                                        return "Saved" + (modelData.secured ? " • Secured" : " • Open")
 
                                     return modelData.secured ? "Secured" : "Open"
                                 }
                                 font.pixelSize: Theme.fontSizeSmall - 1
                                 color: {
                                     if (NetworkService.connectionStatus === "connecting"
-                                            && NetworkService.connectingSSID === modelData.ssid)
+                                        && NetworkService.connectingSSID === modelData.ssid)
                                         return Theme.primary
 
                                     if (NetworkService.connectionStatus === "invalid_password"
-                                            && NetworkService.connectingSSID === modelData.ssid)
+                                        && NetworkService.connectingSSID === modelData.ssid)
                                         return Theme.error
 
-                                    return Qt.rgba(Theme.surfaceText.r,
-                                                   Theme.surfaceText.g,
-                                                   Theme.surfaceText.b, 0.7)
+                                    return Qt.rgba(Theme.surfaceText.r, Theme.surfaceText.g,
+                                        Theme.surfaceText.b, 0.7)
                                 }
                                 elide: Text.ElideRight
                             }
@@ -220,9 +233,8 @@ Column {
                             DankIcon {
                                 name: "lock"
                                 size: Theme.iconSize - 8
-                                color: Qt.rgba(Theme.surfaceText.r,
-                                               Theme.surfaceText.g,
-                                               Theme.surfaceText.b, 0.6)
+                                color: Qt.rgba(Theme.surfaceText.r, Theme.surfaceText.g,
+                                    Theme.surfaceText.b, 0.6)
                                 visible: modelData.secured
                                 anchors.verticalCenter: parent.verticalCenter
                             }
@@ -234,10 +246,10 @@ Column {
                                 height: 24
                                 radius: 12
                                 color: wifiMenuButtonArea.containsMouse ? Qt.rgba(
-                                                                              Theme.surfaceText.r,
-                                                                              Theme.surfaceText.g,
-                                                                              Theme.surfaceText.b,
-                                                                              0.08) : "transparent"
+                                    Theme.surfaceText.r,
+                                    Theme.surfaceText.g,
+                                    Theme.surfaceText.b,
+                                    0.08) : "transparent"
 
                                 DankIcon {
                                     name: "more_vert"
@@ -258,13 +270,12 @@ Column {
                                         let buttonCenter = wifiMenuButtonArea.width / 2
                                         let buttonBottom = wifiMenuButtonArea.height
                                         let globalPos = wifiMenuButtonArea.mapToItem(
-                                                wifiContextMenuWindow.parentItem,
-                                                buttonCenter, buttonBottom)
+                                            wifiContextMenuWindow.parentItem, buttonCenter,
+                                            buttonBottom)
                                         Qt.callLater(() => {
-                                                         wifiContextMenuWindow.show(
-                                                             globalPos.x,
-                                                             globalPos.y)
-                                                     })
+                                            wifiContextMenuWindow.show(globalPos.x,
+                                                globalPos.y)
+                                        })
                                     }
                                 }
 
@@ -292,7 +303,9 @@ Column {
                                 NetworkService.connectToWifi(modelData.ssid)
                             } else if (modelData.secured) {
                                 if (wifiPasswordModalRef) {
-                                    wifiPasswordModalRef.show(modelData.ssid)
+                                    wifiPasswordModalRef.wifiPasswordSSID = modelData.ssid
+                                    wifiPasswordModalRef.wifiPasswordInput = ""
+                                    wifiPasswordModalRef.wifiPasswordModalVisible = true
                                 }
                             } else {
                                 NetworkService.connectToWifi(modelData.ssid)

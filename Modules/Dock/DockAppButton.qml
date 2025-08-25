@@ -11,6 +11,7 @@ Item {
 
     property var appData
     property var contextMenu: null
+    property var windowsMenu: null
     property var dockApps: null
     property int index: -1
     property bool longPressing: false
@@ -202,10 +203,9 @@ Item {
                                        ["gtk-launch", appData.appId])
                                }
                            } else if (appData.type === "window") {
-                               // Focus the specific window using toplevel
-                               if (appData.toplevelObject) {
-                                   appData.toplevelObject.activate()
-                               }
+                               // Focus the specific window
+                               if (appData.windowId)
+                               NiriService.focusWindow(appData.windowId)
                            }
                        } else if (mouse.button === Qt.MiddleButton) {
                            if (appData && appData.appId) {
@@ -301,8 +301,8 @@ Item {
             if (!appData)
                 return "transparent"
 
-            // For window type, check if focused using reactive property
-            if (appData.type === "window" && appData.toplevelObject && appData.toplevelObject.activated)
+            // For window type, check if focused
+            if (appData.type === "window" && appData.isFocused)
                 return Theme.primary
 
             // For running apps, show dimmer indicator

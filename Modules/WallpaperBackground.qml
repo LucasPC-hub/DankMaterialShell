@@ -105,6 +105,8 @@ LazyLoader {
                     smooth: true
                     asynchronous: true
                     cache: false
+                    sourceSize.width: parent.width
+                    sourceSize.height: parent.height
 
                     opacity: 0
 

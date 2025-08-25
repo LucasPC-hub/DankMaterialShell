@@ -1187,7 +1187,7 @@ Item {
                             cursorShape: Qt.PointingHandCursor
                             onClicked: {
                                 logoutDialog.close()
-                                CompositorService.logout()
+                                NiriService.quit()
                             }
                         }
                     }

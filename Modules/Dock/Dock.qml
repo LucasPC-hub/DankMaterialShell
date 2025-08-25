@@ -16,18 +16,24 @@ PanelWindow {
 
     property var modelData
     property var contextMenu
+    property var windowsMenu
     property bool autoHide: SettingsData.dockAutoHide
     property real backgroundTransparency: SettingsData.dockTransparency
 
     property bool contextMenuOpen: (contextMenu && contextMenu.visible
                                     && contextMenu.screen === modelData)
+                                   || (windowsMenu && windowsMenu.visible
+                                       && windowsMenu.screen === modelData)
     property bool windowIsFullscreen: {
-        if (!ToplevelManager.activeToplevel)
+        if (!NiriService.focusedWindowId || !NiriService.niriAvailable)
             return false
-        var activeWindow = ToplevelManager.activeToplevel
+        var focusedWindow = NiriService.windows.find(
+                    w => w.id === NiriService.focusedWindowId)
+        if (!focusedWindow)
+            return false
         var fullscreenApps = ["vlc", "mpv", "kodi", "steam", "lutris", "wine", "dosbox"]
-        return fullscreenApps.some(app => activeWindow.appId
-                                   && activeWindow.appId.toLowerCase(
+        return fullscreenApps.some(app => focusedWindow.app_id
+                                   && focusedWindow.app_id.toLowerCase(
                                        ).includes(app))
     }
     property bool reveal: (!autoHide || dockMouseArea.containsMouse
@@ -136,6 +142,7 @@ PanelWindow {
                     anchors.bottomMargin: 4
 
                     contextMenu: dock.contextMenu
+                    windowsMenu: dock.windowsMenu
                 }
             }
 

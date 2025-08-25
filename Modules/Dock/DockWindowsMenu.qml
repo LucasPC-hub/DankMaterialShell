@@ -10,7 +10,7 @@ import qs.Widgets
 PanelWindow {
     id: root
 
-    property bool showContextMenu: false
+    property bool showWindowsMenu: false
     property var appData: null
     property var anchorItem: null
     property real dockVisibleHeight: 40
@@ -32,15 +32,16 @@ PanelWindow {
             }
         }
 
-        showContextMenu = true
+        showWindowsMenu = true
     }
+
     function close() {
-        showContextMenu = false
+        showWindowsMenu = false
     }
 
     screen: Quickshell.screens[0]
 
-    visible: showContextMenu
+    visible: showWindowsMenu
     WlrLayershell.layer: WlrLayershell.Overlay
     WlrLayershell.exclusiveZone: -1
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
@@ -105,10 +106,10 @@ PanelWindow {
     Rectangle {
         id: menuContainer
 
-        width: Math.min(400,
-                        Math.max(200,
-                                 menuColumn.implicitWidth + Theme.spacingS * 2))
-        height: Math.max(60, menuColumn.implicitHeight + Theme.spacingS * 2)
+        width: Math.min(600, Math.max(
+                            250,
+                            windowColumn.implicitWidth + Theme.spacingS * 2))
+        height: Math.max(60, windowColumn.implicitHeight + Theme.spacingS * 2)
 
         x: {
             var left = 10
@@ -122,8 +123,8 @@ PanelWindow {
         border.color: Qt.rgba(Theme.outline.r, Theme.outline.g,
                               Theme.outline.b, 0.08)
         border.width: 1
-        opacity: showContextMenu ? 1 : 0
-        scale: showContextMenu ? 1 : 0.85
+        opacity: showWindowsMenu ? 1 : 0
+        scale: showWindowsMenu ? 1 : 0.85
 
         Rectangle {
             anchors.fill: parent
@@ -137,63 +138,12 @@ PanelWindow {
         }
 
         Column {
-            id: menuColumn
+            id: windowColumn
             width: parent.width - Theme.spacingS * 2
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.top: parent.top
             anchors.topMargin: Theme.spacingS
             spacing: 1
-
-            Rectangle {
-                width: parent.width
-                height: 28
-                radius: Theme.cornerRadius
-                color: pinArea.containsMouse ? Qt.rgba(Theme.primary.r,
-                                                       Theme.primary.g,
-                                                       Theme.primary.b,
-                                                       0.12) : "transparent"
-
-                StyledText {
-                    anchors.left: parent.left
-                    anchors.leftMargin: Theme.spacingS
-                    anchors.right: parent.right
-                    anchors.rightMargin: Theme.spacingS
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: root.appData
-                          && root.appData.isPinned ? "Unpin from Dock" : "Pin to Dock"
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.surfaceText
-                    font.weight: Font.Normal
-                    elide: Text.ElideRight
-                    wrapMode: Text.NoWrap
-                }
-
-                MouseArea {
-                    id: pinArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        if (!root.appData)
-                            return
-                        if (root.appData.isPinned) {
-                            SessionData.removePinnedApp(root.appData.appId)
-                        } else {
-                            SessionData.addPinnedApp(root.appData.appId)
-                        }
-                        root.close()
-                    }
-                }
-            }
-
-            Rectangle {
-                visible: !!(root.appData && root.appData.windows
-                            && root.appData.windows.count > 0)
-                width: parent.width
-                height: 1
-                color: Qt.rgba(Theme.outline.r, Theme.outline.g,
-                               Theme.outline.b, 0.2)
-            }
 
             Repeater {
                 model: root.appData
@@ -201,8 +151,8 @@ PanelWindow {
 
                 Rectangle {
                     required property var model
-                    width: menuColumn.width
-                    height: 28
+                    width: windowColumn.width
+                    height: 32
                     radius: Theme.cornerRadius
                     color: windowArea.containsMouse ? Qt.rgba(
                                                           Theme.primary.r,
@@ -218,8 +168,8 @@ PanelWindow {
                         anchors.verticalCenter: parent.verticalCenter
                         text: model.title || "Untitled Window"
                         font.pixelSize: Theme.fontSizeSmall
-                        color: Theme.surfaceText
-                        font.weight: Font.Normal
+                        color: model.is_focused ? Theme.primary : Theme.surfaceText
+                        font.weight: model.is_focused ? Font.Medium : Font.Normal
                         elide: Text.ElideRight
                         wrapMode: Text.NoWrap
                     }
@@ -236,70 +186,18 @@ PanelWindow {
                     }
                 }
             }
-
-            Rectangle {
-                visible: !!(root.appData && root.appData.windows
-                            && root.appData.windows.count > 1)
-                width: parent.width
-                height: 1
-                color: Qt.rgba(Theme.outline.r, Theme.outline.g,
-                               Theme.outline.b, 0.2)
-            }
-
-            Rectangle {
-                visible: !!(root.appData && root.appData.windows
-                            && root.appData.windows.count > 1)
-                width: parent.width
-                height: 28
-                radius: Theme.cornerRadius
-                color: closeAllArea.containsMouse ? Qt.rgba(
-                                                        Theme.error.r,
-                                                        Theme.error.g,
-                                                        Theme.error.b,
-                                                        0.12) : "transparent"
-
-                StyledText {
-                    anchors.left: parent.left
-                    anchors.leftMargin: Theme.spacingS
-                    anchors.right: parent.right
-                    anchors.rightMargin: Theme.spacingS
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "Close All Windows"
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: closeAllArea.containsMouse ? Theme.error : Theme.surfaceText
-                    font.weight: Font.Normal
-                    elide: Text.ElideRight
-                    wrapMode: Text.NoWrap
-                }
-
-                MouseArea {
-                    id: closeAllArea
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                        if (!root.appData || !root.appData.windows)
-                            return
-                        for (var i = 0; i < root.appData.windows.count; i++) {
-                            var window = root.appData.windows.get(i)
-                            NiriService.closeWindow(window.id)
-                        }
-                        root.close()
-                    }
-                }
-            }
         }
 
         Behavior on opacity {
             NumberAnimation {
-                duration: Theme.mediumDuration
+                duration: Theme.shortDuration
                 easing.type: Theme.emphasizedEasing
             }
         }
 
         Behavior on scale {
             NumberAnimation {
-                duration: Theme.mediumDuration
+                duration: Theme.shortDuration
                 easing.type: Theme.emphasizedEasing
             }
         }
@@ -308,6 +206,8 @@ PanelWindow {
     MouseArea {
         anchors.fill: parent
         z: -1
+        hoverEnabled: false
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
         onClicked: {
             root.close()
         }

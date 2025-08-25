@@ -2,13 +2,10 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Effects
 import qs.Common
-import qs.Services
 import qs.Widgets
 
 Item {
     id: aboutTab
-
-    property bool isHyprland: CompositorService.isHyprland
 
     DankFlickable {
         anchors.fill: parent
@@ -65,36 +62,26 @@ Item {
                         width: parent.width
                     }
 
-                    Item {
+                    Row {
                         id: communityIcons
                         anchors.horizontalCenter: parent.horizontalCenter
-                        height: 24
-                        width: {
-                            if (isHyprland) {
-                                return compositorButton.width + discordButton.width + Theme.spacingM + redditButton.width + Theme.spacingM
-                            } else {
-                                return compositorButton.width + matrixButton.width + 4 + discordButton.width + Theme.spacingM + redditButton.width + Theme.spacingM
-                            }
-                        }
+                        spacing: Theme.spacingL
 
-                        // Compositor logo (Niri or Hyprland)
+                        // Niri logo
                         Item {
-                            id: compositorButton
+                            id: niriButton
                             width: 24
                             height: 24
-                            anchors.verticalCenter: parent.verticalCenter
-                            anchors.verticalCenterOffset: -2
-                            x: 0
 
                             property bool hovered: false
-                            property string tooltipText: isHyprland ? "Hyprland Website" : "niri GitHub"
+                            property string tooltipText: "niri GitHub"
 
                             Image {
                                 anchors.fill: parent
                                 source: Qt.resolvedUrl(".").toString().replace(
                                             "file://", "").replace(
                                             "/Modules/Settings/",
-                                            "") + (isHyprland ? "/assets/hyprland.svg" : "/assets/niri.svg")
+                                            "") + "/assets/niri.svg"
                                 sourceSize: Qt.size(24, 24)
                                 smooth: true
                                 fillMode: Image.PreserveAspectFit
@@ -107,17 +94,15 @@ Item {
                                 onEntered: parent.hovered = true
                                 onExited: parent.hovered = false
                                 onClicked: Qt.openUrlExternally(
-                                               isHyprland ? "https://hypr.land" : "https://github.com/YaLTeR/niri")
+                                               "https://github.com/YaLTeR/niri")
                             }
                         }
 
-                        // Matrix button (only for Niri)
+                        // Matrix button
                         Item {
                             id: matrixButton
                             width: 30
                             height: 24
-                            x: compositorButton.x + compositorButton.width + 4
-                            visible: !isHyprland
 
                             property bool hovered: false
                             property string tooltipText: "niri Matrix Chat"
@@ -155,11 +140,9 @@ Item {
                             id: discordButton
                             width: 20
                             height: 20
-                            x: isHyprland ? compositorButton.x + compositorButton.width + Theme.spacingM : matrixButton.x + matrixButton.width + Theme.spacingM
-                            anchors.verticalCenter: parent.verticalCenter
 
                             property bool hovered: false
-                            property string tooltipText: isHyprland ? "Hyprland Discord Server" : "niri Discord Server"
+                            property string tooltipText: "niri Discord Server"
 
                             Image {
                                 anchors.fill: parent
@@ -179,7 +162,7 @@ Item {
                                 onEntered: parent.hovered = true
                                 onExited: parent.hovered = false
                                 onClicked: Qt.openUrlExternally(
-                                               isHyprland ? "https://discord.com/invite/hQ9XvMUjjr" : "https://discord.gg/vT8Sfjy7sx")
+                                               "https://discord.gg/vT8Sfjy7sx")
                             }
                         }
 
@@ -188,11 +171,9 @@ Item {
                             id: redditButton
                             width: 20
                             height: 20
-                            x: discordButton.x + discordButton.width + Theme.spacingM
-                            anchors.verticalCenter: parent.verticalCenter
 
                             property bool hovered: false
-                            property string tooltipText: isHyprland ? "r/hyprland Subreddit" : "r/niri Subreddit"
+                            property string tooltipText: "r/niri Subreddit"
 
                             Image {
                                 anchors.fill: parent
@@ -212,7 +193,7 @@ Item {
                                 onEntered: parent.hovered = true
                                 onExited: parent.hovered = false
                                 onClicked: Qt.openUrlExternally(
-                                               isHyprland ? "https://reddit.com/r/hyprland" : "https://reddit.com/r/niri")
+                                               "https://reddit.com/r/niri")
                             }
                         }
                     }
@@ -388,27 +369,10 @@ Item {
                             }
                             
                             StyledText {
-                                text: "&"
+                                text: "(Hyprland Soon™)"
                                 font.pixelSize: Theme.fontSizeMedium
                                 color: Theme.surfaceVariantText
                                 anchors.verticalCenter: parent.verticalCenter
-                            }
-                            
-                            StyledText {
-                                text: `<a href="https://github.com/hyprwm/Hyprland" style="text-decoration:none; color:${Theme.primary};">hyprland</a>`
-                                font.pixelSize: Theme.fontSizeMedium
-                                linkColor: Theme.primary
-                                textFormat: Text.RichText
-                                color: Theme.surfaceVariantText
-                                onLinkActivated: url => Qt.openUrlExternally(url)
-                                anchors.verticalCenter: parent.verticalCenter
-
-                                MouseArea {
-                                    anchors.fill: parent
-                                    cursorShape: parent.hoveredLink ? Qt.PointingHandCursor : Qt.ArrowCursor
-                                    acceptedButtons: Qt.NoButton
-                                    propagateComposedEvents: true
-                                }
                             }
                         }
 
@@ -495,8 +459,8 @@ Item {
         z: 1000
 
         property var hoveredButton: {
-            if (compositorButton.hovered) return compositorButton
-            if (matrixButton.visible && matrixButton.hovered) return matrixButton
+            if (niriButton.hovered) return niriButton
+            if (matrixButton.hovered) return matrixButton
             if (discordButton.hovered) return discordButton
             if (redditButton.hovered) return redditButton
             return null
@@ -514,7 +478,7 @@ Item {
         border.color: Theme.outlineMedium
 
         x: hoveredButton ? hoveredButton.mapToItem(aboutTab, hoveredButton.width / 2, 0).x - width / 2 : 0
-        y: hoveredButton ? communityIcons.mapToItem(aboutTab, 0, 0).y - height - 8 : 0
+        y: hoveredButton ? hoveredButton.mapToItem(aboutTab, 0, -height - 4).y : 0
 
         layer.enabled: true
         layer.effect: MultiEffect {

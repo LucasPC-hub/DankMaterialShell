@@ -27,15 +27,6 @@ DankPopout {
         triggerScreen = screen
     }
 
-    function openWithTab(tab) {
-        if (shouldBeVisible) {
-            close()
-        } else {
-            currentTab = tab
-            open()
-        }
-    }
-
     signal powerActionRequested(string action, string title, string message)
     signal lockRequested
 
