@@ -167,8 +167,7 @@ Item {
                                                       "comment": app.comment || "",
                                                       "categories": app.categories || [],
                                                       "isPlugin": isPluginItem,
-                                                      "appIndex": uniqueApps.length - 1,
-                                                      "desktopEntry": isPluginItem ? null : app
+                                                      "appIndex": uniqueApps.length - 1
                                                   })
                          }
                      })

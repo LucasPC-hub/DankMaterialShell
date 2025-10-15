@@ -139,7 +139,7 @@ DankMaterialShell particularly aims at supporting the **niri** and **Hyprland** 
 **Niri**:
 ```bash
 # Arch Linux
-paru -S niri-git
+sudo pacman -S niri
 
 # Fedora  
 sudo dnf copr enable yalter/niri && sudo dnf install niri

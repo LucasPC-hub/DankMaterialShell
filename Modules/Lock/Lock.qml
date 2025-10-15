@@ -19,7 +19,7 @@ Scope {
     }
 
     function lock() {
-        if (!processingExternalEvent && SessionData.loginctlLockIntegration && DMSService.isConnected) {
+        if (!processingExternalEvent && SettingsData.loginctlLockIntegration && DMSService.isConnected) {
             DMSService.lockSession(response => {
                 if (response.error) {
                     console.warn("Lock: Failed to call loginctl.lock:", response.error)
@@ -32,7 +32,7 @@ Scope {
     }
 
     function unlock() {
-        if (!processingExternalEvent && SessionData.loginctlLockIntegration && DMSService.isConnected) {
+        if (!processingExternalEvent && SettingsData.loginctlLockIntegration && DMSService.isConnected) {
             DMSService.unlockSession(response => {
                 if (response.error) {
                     console.warn("Lock: Failed to call loginctl.unlock:", response.error)

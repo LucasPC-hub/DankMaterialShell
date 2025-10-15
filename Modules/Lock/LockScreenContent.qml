@@ -134,7 +134,7 @@ Item {
             if (screenName && currentWallpaper && currentWallpaper.startsWith("we:")) {
                 const cacheHome = StandardPaths.writableLocation(StandardPaths.CacheLocation).toString()
                 const baseDir = Paths.strip(cacheHome)
-                const screenshotPath = baseDir + "/dankshell/we_screenshots" + "/" + currentWallpaper.substring(3) + ".jpg"
+                const screenshotPath = baseDir + "/DankMaterialShell/we_screenshots" + "/" + currentWallpaper.substring(3) + ".jpg"
                 return screenshotPath
             }
             return (currentWallpaper && !currentWallpaper.startsWith("#")) ? currentWallpaper : ""
@@ -761,6 +761,8 @@ Item {
                         Repeater {
                             model: 6
                             delegate: Rectangle {
+                                required property int index
+
                                 width: 2
                                 height: {
                                     if (MprisController.activePlayer?.playbackState === MprisPlaybackState.Playing && CavaService.values.length > index) {

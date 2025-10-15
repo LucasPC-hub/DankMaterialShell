@@ -12,6 +12,7 @@ Popup {
     property var currentApp: null
     property var appLauncher: null
     property var parentHandler: null
+    readonly property var desktopEntry: (currentApp && !currentApp.isPlugin && appLauncher && appLauncher._uniqueApps && currentApp.appIndex >= 0 && currentApp.appIndex < appLauncher._uniqueApps.length) ? appLauncher._uniqueApps[currentApp.appIndex] : null
 
     function show(x, y, app) {
         currentApp = app
@@ -92,10 +93,10 @@ Popup {
 
                 DankIcon {
                     name: {
-                        if (!contextMenu.currentApp || !contextMenu.currentApp.desktopEntry)
+                        if (!desktopEntry)
                             return "push_pin"
 
-                        const appId = contextMenu.currentApp.desktopEntry.id || contextMenu.currentApp.desktopEntry.execString || ""
+                        const appId = desktopEntry.id || desktopEntry.execString || ""
                         return SessionData.isPinnedApp(appId) ? "keep_off" : "push_pin"
                     }
                     size: Theme.iconSize - 2
@@ -106,10 +107,10 @@ Popup {
 
                 StyledText {
                     text: {
-                        if (!contextMenu.currentApp || !contextMenu.currentApp.desktopEntry)
+                        if (!desktopEntry)
                             return I18n.tr("Pin to Dock")
 
-                        const appId = contextMenu.currentApp.desktopEntry.id || contextMenu.currentApp.desktopEntry.execString || ""
+                        const appId = desktopEntry.id || desktopEntry.execString || ""
                         return SessionData.isPinnedApp(appId) ? I18n.tr("Unpin from Dock") : I18n.tr("Pin to Dock")
                     }
                     font.pixelSize: Theme.fontSizeSmall
@@ -126,10 +127,10 @@ Popup {
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: () => {
-                               if (!contextMenu.currentApp || !contextMenu.currentApp.desktopEntry)
+                               if (!desktopEntry)
                                return
 
-                               const appId = contextMenu.currentApp.desktopEntry.id || contextMenu.currentApp.desktopEntry.execString || ""
+                               const appId = desktopEntry.id || desktopEntry.execString || ""
                                if (SessionData.isPinnedApp(appId))
                                SessionData.removePinnedApp(appId)
                                else
@@ -154,7 +155,7 @@ Popup {
         }
 
         Repeater {
-            model: contextMenu.currentApp && contextMenu.currentApp.desktopEntry && contextMenu.currentApp.desktopEntry.actions ? contextMenu.currentApp.desktopEntry.actions : []
+            model: desktopEntry && desktopEntry.actions ? desktopEntry.actions : []
 
             Rectangle {
                 implicitWidth: actionRow.implicitWidth + Theme.spacingS * 2
@@ -200,9 +201,9 @@ Popup {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        if (modelData && contextMenu.currentApp && contextMenu.currentApp.desktopEntry) {
-                            SessionService.launchDesktopAction(contextMenu.currentApp.desktopEntry, modelData)
-                            if (appLauncher) {
+                        if (modelData && desktopEntry) {
+                            SessionService.launchDesktopAction(desktopEntry, modelData)
+                            if (appLauncher && contextMenu.currentApp) {
                                 appLauncher.appLaunched(contextMenu.currentApp)
                             }
                         }
@@ -213,7 +214,7 @@ Popup {
         }
 
         Rectangle {
-            visible: contextMenu.currentApp && contextMenu.currentApp.desktopEntry && contextMenu.currentApp.desktopEntry.actions && contextMenu.currentApp.desktopEntry.actions.length > 0
+            visible: desktopEntry && desktopEntry.actions && desktopEntry.actions.length > 0
             width: parent.width - Theme.spacingS * 2
             height: 5
             anchors.horizontalCenter: parent.horizontalCenter
@@ -327,9 +328,9 @@ Popup {
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: () => {
-                               if (contextMenu.currentApp && contextMenu.currentApp.desktopEntry) {
-                                   SessionService.launchDesktopEntry(contextMenu.currentApp.desktopEntry, true)
-                                   if (appLauncher) {
+                               if (desktopEntry) {
+                                   SessionService.launchDesktopEntry(desktopEntry, true)
+                                   if (appLauncher && contextMenu.currentApp) {
                                        appLauncher.appLaunched(contextMenu.currentApp)
                                    }
                                }

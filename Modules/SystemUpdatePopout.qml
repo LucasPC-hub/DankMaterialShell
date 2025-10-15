@@ -22,6 +22,10 @@ DankPopout {
         triggerScreen = screen;
     }
 
+    Ref {
+        service: SystemUpdateService
+    }
+
     popupWidth: 400
     popupHeight: 500
     triggerX: Screen.width - 600 - Theme.spacingL

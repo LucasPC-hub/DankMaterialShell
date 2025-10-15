@@ -9,15 +9,19 @@ import qs.Common
 import qs.Services
 
 Singleton {
-
     id: root
 
+    readonly property int sessionConfigVersion: 1
+
     readonly property bool isGreeterMode: Quickshell.env("DMS_RUN_GREETER") === "1" || Quickshell.env("DMS_RUN_GREETER") === "true"
+    property bool hasTriedDefaultSession: false
+    readonly property string _stateUrl: StandardPaths.writableLocation(StandardPaths.GenericStateLocation)
+    readonly property string _stateDir: Paths.strip(_stateUrl)
 
     property bool isLightMode: false
+    property bool doNotDisturb: false
+
     property string wallpaperPath: ""
-    property string wallpaperLastPath: ""
-    property string profileLastPath: ""
     property bool perMonitorWallpaper: false
     property var monitorWallpapers: ({})
     property bool perModeWallpaper: false
@@ -25,15 +29,20 @@ Singleton {
     property string wallpaperPathDark: ""
     property var monitorWallpapersLight: ({})
     property var monitorWallpapersDark: ({})
-    property bool doNotDisturb: false
+    property string wallpaperTransition: "fade"
+    readonly property var availableWallpaperTransitions: ["none", "fade", "wipe", "disc", "stripes", "iris bloom", "pixelate", "portal"]
+    property var includedTransitions: availableWallpaperTransitions.filter(t => t !== "none")
+
+    property bool wallpaperCyclingEnabled: false
+    property string wallpaperCyclingMode: "interval"
+    property int wallpaperCyclingInterval: 300
+    property string wallpaperCyclingTime: "06:00"
+    property var monitorCyclingSettings: ({})
+
     property bool nightModeEnabled: false
     property int nightModeTemperature: 4500
     property bool nightModeAutoEnabled: false
     property string nightModeAutoMode: "time"
-    
-    property bool hasTriedDefaultSession: false
-    readonly property string _stateUrl: StandardPaths.writableLocation(StandardPaths.GenericStateLocation)
-    readonly property string _stateDir: Paths.strip(_stateUrl)
     property int nightModeStartHour: 18
     property int nightModeStartMinute: 0
     property int nightModeEndHour: 6
@@ -41,39 +50,17 @@ Singleton {
     property real latitude: 0.0
     property real longitude: 0.0
     property string nightModeLocationProvider: ""
+
     property var pinnedApps: []
+    property var recentColors: []
+    property bool showThirdPartyPlugins: false
+    property string launchPrefix: ""
+    property string lastBrightnessDevice: ""
+
     property int selectedGpuIndex: 0
     property bool nvidiaGpuTempEnabled: false
     property bool nonNvidiaGpuTempEnabled: false
     property var enabledGpuPciIds: []
-    property bool wallpaperCyclingEnabled: false
-    property string wallpaperCyclingMode: "interval" // "interval" or "time"
-    property int wallpaperCyclingInterval: 300 // seconds (5 minutes)
-    property string wallpaperCyclingTime: "06:00" // HH:mm format
-    property var monitorCyclingSettings: ({})
-    property string lastBrightnessDevice: ""
-    property string launchPrefix: ""
-    property string wallpaperTransition: "fade"
-    readonly property var availableWallpaperTransitions: ["none", "fade", "wipe", "disc", "stripes", "iris bloom", "pixelate", "portal"]
-    property var includedTransitions: availableWallpaperTransitions.filter(t => t !== "none")
-
-    // Power management settings - AC Power
-    property int acMonitorTimeout: 0 // Never
-    property int acLockTimeout: 0 // Never
-    property int acSuspendTimeout: 0 // Never
-    property int acHibernateTimeout: 0 // Never
-
-    // Power management settings - Battery
-    property int batteryMonitorTimeout: 0 // Never
-    property int batteryLockTimeout: 0 // Never
-    property int batterySuspendTimeout: 0 // Never
-    property int batteryHibernateTimeout: 0 // Never
-
-    property bool lockBeforeSuspend: false
-    property bool loginctlLockIntegration: true
-    property var recentColors: []
-    property bool showThirdPartyPlugins: false
-
 
     Component.onCompleted: {
         if (!isGreeterMode) {
@@ -95,8 +82,6 @@ Singleton {
                 var settings = JSON.parse(content)
                 isLightMode = settings.isLightMode !== undefined ? settings.isLightMode : false
                 wallpaperPath = settings.wallpaperPath !== undefined ? settings.wallpaperPath : ""
-                wallpaperLastPath = settings.wallpaperLastPath !== undefined ? settings.wallpaperLastPath : ""
-                profileLastPath = settings.profileLastPath !== undefined ? settings.profileLastPath : ""
                 perMonitorWallpaper = settings.perMonitorWallpaper !== undefined ? settings.perMonitorWallpaper : false
                 monitorWallpapers = settings.monitorWallpapers !== undefined ? settings.monitorWallpapers : {}
                 perModeWallpaper = settings.perModeWallpaper !== undefined ? settings.perModeWallpaper : false
@@ -109,7 +94,6 @@ Singleton {
                 nightModeTemperature = settings.nightModeTemperature !== undefined ? settings.nightModeTemperature : 4500
                 nightModeAutoEnabled = settings.nightModeAutoEnabled !== undefined ? settings.nightModeAutoEnabled : false
                 nightModeAutoMode = settings.nightModeAutoMode !== undefined ? settings.nightModeAutoMode : "time"
-                // Handle legacy time format
                 if (settings.nightModeStartTime !== undefined) {
                     const parts = settings.nightModeStartTime.split(":")
                     nightModeStartHour = parseInt(parts[0]) || 18
@@ -143,19 +127,15 @@ Singleton {
                 launchPrefix = settings.launchPrefix !== undefined ? settings.launchPrefix : ""
                 wallpaperTransition = settings.wallpaperTransition !== undefined ? settings.wallpaperTransition : "fade"
                 includedTransitions = settings.includedTransitions !== undefined ? settings.includedTransitions : availableWallpaperTransitions.filter(t => t !== "none")
-
-                acMonitorTimeout = settings.acMonitorTimeout !== undefined ? settings.acMonitorTimeout : 0
-                acLockTimeout = settings.acLockTimeout !== undefined ? settings.acLockTimeout : 0
-                acSuspendTimeout = settings.acSuspendTimeout !== undefined ? settings.acSuspendTimeout : 0
-                acHibernateTimeout = settings.acHibernateTimeout !== undefined ? settings.acHibernateTimeout : 0
-                batteryMonitorTimeout = settings.batteryMonitorTimeout !== undefined ? settings.batteryMonitorTimeout : 0
-                batteryLockTimeout = settings.batteryLockTimeout !== undefined ? settings.batteryLockTimeout : 0
-                batterySuspendTimeout = settings.batterySuspendTimeout !== undefined ? settings.batterySuspendTimeout : 0
-                batteryHibernateTimeout = settings.batteryHibernateTimeout !== undefined ? settings.batteryHibernateTimeout : 0
-                lockBeforeSuspend = settings.lockBeforeSuspend !== undefined ? settings.lockBeforeSuspend : false
-                loginctlLockIntegration = settings.loginctlLockIntegration !== undefined ? settings.loginctlLockIntegration : true
                 recentColors = settings.recentColors !== undefined ? settings.recentColors : []
                 showThirdPartyPlugins = settings.showThirdPartyPlugins !== undefined ? settings.showThirdPartyPlugins : false
+
+                if (settings.configVersion === undefined) {
+                    migrateFromUndefinedToV1(settings)
+                    saveSettings()
+                } else if (settings.configVersion === sessionConfigVersion) {
+                    cleanupUnusedKeys()
+                }
 
                 if (!isGreeterMode) {
                     if (typeof Theme !== "undefined") {
@@ -173,8 +153,6 @@ Singleton {
         settingsFile.setText(JSON.stringify({
                                                 "isLightMode": isLightMode,
                                                 "wallpaperPath": wallpaperPath,
-                                                "wallpaperLastPath": wallpaperLastPath,
-                                                "profileLastPath": profileLastPath,
                                                 "perMonitorWallpaper": perMonitorWallpaper,
                                                 "monitorWallpapers": monitorWallpapers,
                                                 "perModeWallpaper": perModeWallpaper,
@@ -208,19 +186,96 @@ Singleton {
                                                 "launchPrefix": launchPrefix,
                                                 "wallpaperTransition": wallpaperTransition,
                                                 "includedTransitions": includedTransitions,
-                                                "acMonitorTimeout": acMonitorTimeout,
-                                                "acLockTimeout": acLockTimeout,
-                                                "acSuspendTimeout": acSuspendTimeout,
-                                                "acHibernateTimeout": acHibernateTimeout,
-                                                "batteryMonitorTimeout": batteryMonitorTimeout,
-                                                "batteryLockTimeout": batteryLockTimeout,
-                                                "batterySuspendTimeout": batterySuspendTimeout,
-                                                "batteryHibernateTimeout": batteryHibernateTimeout,
-                                                "lockBeforeSuspend": lockBeforeSuspend,
-                                                "loginctlLockIntegration": loginctlLockIntegration,
                                                 "recentColors": recentColors,
-                                                "showThirdPartyPlugins": showThirdPartyPlugins
+                                                "showThirdPartyPlugins": showThirdPartyPlugins,
+                                                "configVersion": sessionConfigVersion
                                             }, null, 2))
+    }
+
+    function migrateFromUndefinedToV1(settings) {
+        console.log("SessionData: Migrating configuration from undefined to version 1")
+        if (typeof SettingsData !== "undefined") {
+            if (settings.acMonitorTimeout !== undefined) {
+                SettingsData.setAcMonitorTimeout(settings.acMonitorTimeout)
+            }
+            if (settings.acLockTimeout !== undefined) {
+                SettingsData.setAcLockTimeout(settings.acLockTimeout)
+            }
+            if (settings.acSuspendTimeout !== undefined) {
+                SettingsData.setAcSuspendTimeout(settings.acSuspendTimeout)
+            }
+            if (settings.acHibernateTimeout !== undefined) {
+                SettingsData.setAcHibernateTimeout(settings.acHibernateTimeout)
+            }
+            if (settings.batteryMonitorTimeout !== undefined) {
+                SettingsData.setBatteryMonitorTimeout(settings.batteryMonitorTimeout)
+            }
+            if (settings.batteryLockTimeout !== undefined) {
+                SettingsData.setBatteryLockTimeout(settings.batteryLockTimeout)
+            }
+            if (settings.batterySuspendTimeout !== undefined) {
+                SettingsData.setBatterySuspendTimeout(settings.batterySuspendTimeout)
+            }
+            if (settings.batteryHibernateTimeout !== undefined) {
+                SettingsData.setBatteryHibernateTimeout(settings.batteryHibernateTimeout)
+            }
+            if (settings.lockBeforeSuspend !== undefined) {
+                SettingsData.setLockBeforeSuspend(settings.lockBeforeSuspend)
+            }
+            if (settings.loginctlLockIntegration !== undefined) {
+                SettingsData.setLoginctlLockIntegration(settings.loginctlLockIntegration)
+            }
+            if (settings.launchPrefix !== undefined) {
+                SettingsData.setLaunchPrefix(settings.launchPrefix)
+            }
+        }
+        if (typeof CacheData !== "undefined") {
+            if (settings.wallpaperLastPath !== undefined) {
+                CacheData.wallpaperLastPath = settings.wallpaperLastPath
+            }
+            if (settings.profileLastPath !== undefined) {
+                CacheData.profileLastPath = settings.profileLastPath
+            }
+            CacheData.saveCache()
+        }
+    }
+
+    function cleanupUnusedKeys() {
+        const validKeys = [
+            "isLightMode", "wallpaperPath", "perMonitorWallpaper", "monitorWallpapers", "perModeWallpaper",
+            "wallpaperPathLight", "wallpaperPathDark", "monitorWallpapersLight",
+            "monitorWallpapersDark", "doNotDisturb", "nightModeEnabled",
+            "nightModeTemperature", "nightModeAutoEnabled", "nightModeAutoMode",
+            "nightModeStartHour", "nightModeStartMinute", "nightModeEndHour",
+            "nightModeEndMinute", "latitude", "longitude", "nightModeLocationProvider",
+            "pinnedApps", "selectedGpuIndex", "nvidiaGpuTempEnabled",
+            "nonNvidiaGpuTempEnabled", "enabledGpuPciIds", "wallpaperCyclingEnabled",
+            "wallpaperCyclingMode", "wallpaperCyclingInterval", "wallpaperCyclingTime",
+            "monitorCyclingSettings", "lastBrightnessDevice", "wallpaperTransition",
+            "includedTransitions", "recentColors", "showThirdPartyPlugins", "configVersion"
+        ]
+
+        try {
+            const content = settingsFile.text()
+            if (!content || !content.trim()) return
+
+            const settings = JSON.parse(content)
+            let needsSave = false
+
+            for (const key in settings) {
+                if (!validKeys.includes(key)) {
+                    console.log("SessionData: Removing unused key:", key)
+                    delete settings[key]
+                    needsSave = true
+                }
+            }
+
+            if (needsSave) {
+                settingsFile.setText(JSON.stringify(settings, null, 2))
+            }
+        } catch (e) {
+            console.warn("SessionData: Failed to cleanup unused keys:", e.message)
+        }
     }
 
     function setLightMode(lightMode) {
@@ -229,77 +284,8 @@ Singleton {
         saveSettings()
     }
 
-    function syncWallpaperForCurrentMode() {
-        if (!perModeWallpaper) return
-
-        if (perMonitorWallpaper) {
-            monitorWallpapers = isLightMode ? Object.assign({}, monitorWallpapersLight) : Object.assign({}, monitorWallpapersDark)
-            return
-        }
-
-        wallpaperPath = isLightMode ? wallpaperPathLight : wallpaperPathDark
-    }
-
     function setDoNotDisturb(enabled) {
         doNotDisturb = enabled
-        saveSettings()
-    }
-
-    function setNightModeEnabled(enabled) {
-        nightModeEnabled = enabled
-        saveSettings()
-    }
-
-    function setNightModeTemperature(temperature) {
-        nightModeTemperature = temperature
-        saveSettings()
-    }
-
-    function setNightModeAutoEnabled(enabled) {
-        console.log("SessionData: Setting nightModeAutoEnabled to", enabled)
-        nightModeAutoEnabled = enabled
-        saveSettings()
-    }
-
-    function setNightModeAutoMode(mode) {
-        nightModeAutoMode = mode
-        saveSettings()
-    }
-
-    function setNightModeStartHour(hour) {
-        nightModeStartHour = hour
-        saveSettings()
-    }
-
-    function setNightModeStartMinute(minute) {
-        nightModeStartMinute = minute
-        saveSettings()
-    }
-
-    function setNightModeEndHour(hour) {
-        nightModeEndHour = hour
-        saveSettings()
-    }
-
-    function setNightModeEndMinute(minute) {
-        nightModeEndMinute = minute
-        saveSettings()
-    }
-
-    function setLatitude(lat) {
-        console.log("SessionData: Setting latitude to", lat)
-        latitude = lat
-        saveSettings()
-    }
-
-    function setLongitude(lng) {
-        console.log("SessionData: Setting longitude to", lng)
-        longitude = lng
-        saveSettings()
-    }
-
-    function setNightModeLocationProvider(provider) {
-        nightModeLocationProvider = provider
         saveSettings()
     }
 
@@ -351,141 +337,6 @@ Singleton {
                 Theme.switchTheme("blue")
             }
         }
-    }
-
-    function setWallpaperLastPath(path) {
-        wallpaperLastPath = path
-        saveSettings()
-    }
-
-    function setProfileLastPath(path) {
-        profileLastPath = path
-        saveSettings()
-    }
-
-    function setPinnedApps(apps) {
-        pinnedApps = apps
-        saveSettings()
-    }
-
-    function addRecentColor(color) {
-        const colorStr = color.toString()
-        let recent = recentColors.slice()
-        recent = recent.filter(c => c !== colorStr)
-        recent.unshift(colorStr)
-        if (recent.length > 5) recent = recent.slice(0, 5)
-        recentColors = recent
-        saveSettings()
-    }
-
-    function addPinnedApp(appId) {
-        if (!appId)
-            return
-        var currentPinned = [...pinnedApps]
-        if (currentPinned.indexOf(appId) === -1) {
-            currentPinned.push(appId)
-            setPinnedApps(currentPinned)
-        }
-    }
-
-    function removePinnedApp(appId) {
-        if (!appId)
-            return
-        var currentPinned = pinnedApps.filter(id => id !== appId)
-        setPinnedApps(currentPinned)
-    }
-
-    function isPinnedApp(appId) {
-        return appId && pinnedApps.indexOf(appId) !== -1
-    }
-
-    function setSelectedGpuIndex(index) {
-        selectedGpuIndex = index
-        saveSettings()
-    }
-
-    function setNvidiaGpuTempEnabled(enabled) {
-        nvidiaGpuTempEnabled = enabled
-        saveSettings()
-    }
-
-    function setNonNvidiaGpuTempEnabled(enabled) {
-        nonNvidiaGpuTempEnabled = enabled
-        saveSettings()
-    }
-
-    function setEnabledGpuPciIds(pciIds) {
-        enabledGpuPciIds = pciIds
-        saveSettings()
-    }
-
-    function setWallpaperCyclingEnabled(enabled) {
-        wallpaperCyclingEnabled = enabled
-        saveSettings()
-    }
-
-    function setWallpaperCyclingMode(mode) {
-        wallpaperCyclingMode = mode
-        saveSettings()
-    }
-
-    function setWallpaperCyclingInterval(interval) {
-        wallpaperCyclingInterval = interval
-        saveSettings()
-    }
-
-    function setWallpaperCyclingTime(time) {
-        wallpaperCyclingTime = time
-        saveSettings()
-    }
-
-    function getMonitorCyclingSettings(screenName) {
-        return monitorCyclingSettings[screenName] || {
-            enabled: false,
-            mode: "interval",
-            interval: 300,
-            time: "06:00"
-        }
-    }
-
-    function setMonitorCyclingEnabled(screenName, enabled) {
-        var newSettings = Object.assign({}, monitorCyclingSettings)
-        if (!newSettings[screenName]) {
-            newSettings[screenName] = { enabled: false, mode: "interval", interval: 300, time: "06:00" }
-        }
-        newSettings[screenName].enabled = enabled
-        monitorCyclingSettings = newSettings
-        saveSettings()
-    }
-
-    function setMonitorCyclingMode(screenName, mode) {
-        var newSettings = Object.assign({}, monitorCyclingSettings)
-        if (!newSettings[screenName]) {
-            newSettings[screenName] = { enabled: false, mode: "interval", interval: 300, time: "06:00" }
-        }
-        newSettings[screenName].mode = mode
-        monitorCyclingSettings = newSettings
-        saveSettings()
-    }
-
-    function setMonitorCyclingInterval(screenName, interval) {
-        var newSettings = Object.assign({}, monitorCyclingSettings)
-        if (!newSettings[screenName]) {
-            newSettings[screenName] = { enabled: false, mode: "interval", interval: 300, time: "06:00" }
-        }
-        newSettings[screenName].interval = interval
-        monitorCyclingSettings = newSettings
-        saveSettings()
-    }
-
-    function setMonitorCyclingTime(screenName, time) {
-        var newSettings = Object.assign({}, monitorCyclingSettings)
-        if (!newSettings[screenName]) {
-            newSettings[screenName] = { enabled: false, mode: "interval", interval: 300, time: "06:00" }
-        }
-        newSettings[screenName].time = time
-        monitorCyclingSettings = newSettings
-        saveSettings()
     }
 
     function setPerMonitorWallpaper(enabled) {
@@ -579,15 +430,167 @@ Singleton {
         }
     }
 
-    function getMonitorWallpaper(screenName) {
-        if (!perMonitorWallpaper) {
-            return wallpaperPath
-        }
-        return monitorWallpapers[screenName] || wallpaperPath
+    function setWallpaperTransition(transition) {
+        wallpaperTransition = transition
+        saveSettings()
     }
 
-    function setLastBrightnessDevice(device) {
-        lastBrightnessDevice = device
+    function setWallpaperCyclingEnabled(enabled) {
+        wallpaperCyclingEnabled = enabled
+        saveSettings()
+    }
+
+    function setWallpaperCyclingMode(mode) {
+        wallpaperCyclingMode = mode
+        saveSettings()
+    }
+
+    function setWallpaperCyclingInterval(interval) {
+        wallpaperCyclingInterval = interval
+        saveSettings()
+    }
+
+    function setWallpaperCyclingTime(time) {
+        wallpaperCyclingTime = time
+        saveSettings()
+    }
+
+    function setMonitorCyclingEnabled(screenName, enabled) {
+        var newSettings = Object.assign({}, monitorCyclingSettings)
+        if (!newSettings[screenName]) {
+            newSettings[screenName] = { enabled: false, mode: "interval", interval: 300, time: "06:00" }
+        }
+        newSettings[screenName].enabled = enabled
+        monitorCyclingSettings = newSettings
+        saveSettings()
+    }
+
+    function setMonitorCyclingMode(screenName, mode) {
+        var newSettings = Object.assign({}, monitorCyclingSettings)
+        if (!newSettings[screenName]) {
+            newSettings[screenName] = { enabled: false, mode: "interval", interval: 300, time: "06:00" }
+        }
+        newSettings[screenName].mode = mode
+        monitorCyclingSettings = newSettings
+        saveSettings()
+    }
+
+    function setMonitorCyclingInterval(screenName, interval) {
+        var newSettings = Object.assign({}, monitorCyclingSettings)
+        if (!newSettings[screenName]) {
+            newSettings[screenName] = { enabled: false, mode: "interval", interval: 300, time: "06:00" }
+        }
+        newSettings[screenName].interval = interval
+        monitorCyclingSettings = newSettings
+        saveSettings()
+    }
+
+    function setMonitorCyclingTime(screenName, time) {
+        var newSettings = Object.assign({}, monitorCyclingSettings)
+        if (!newSettings[screenName]) {
+            newSettings[screenName] = { enabled: false, mode: "interval", interval: 300, time: "06:00" }
+        }
+        newSettings[screenName].time = time
+        monitorCyclingSettings = newSettings
+        saveSettings()
+    }
+
+    function setNightModeEnabled(enabled) {
+        nightModeEnabled = enabled
+        saveSettings()
+    }
+
+    function setNightModeTemperature(temperature) {
+        nightModeTemperature = temperature
+        saveSettings()
+    }
+
+    function setNightModeAutoEnabled(enabled) {
+        console.log("SessionData: Setting nightModeAutoEnabled to", enabled)
+        nightModeAutoEnabled = enabled
+        saveSettings()
+    }
+
+    function setNightModeAutoMode(mode) {
+        nightModeAutoMode = mode
+        saveSettings()
+    }
+
+    function setNightModeStartHour(hour) {
+        nightModeStartHour = hour
+        saveSettings()
+    }
+
+    function setNightModeStartMinute(minute) {
+        nightModeStartMinute = minute
+        saveSettings()
+    }
+
+    function setNightModeEndHour(hour) {
+        nightModeEndHour = hour
+        saveSettings()
+    }
+
+    function setNightModeEndMinute(minute) {
+        nightModeEndMinute = minute
+        saveSettings()
+    }
+
+    function setLatitude(lat) {
+        console.log("SessionData: Setting latitude to", lat)
+        latitude = lat
+        saveSettings()
+    }
+
+    function setLongitude(lng) {
+        console.log("SessionData: Setting longitude to", lng)
+        longitude = lng
+        saveSettings()
+    }
+
+    function setNightModeLocationProvider(provider) {
+        nightModeLocationProvider = provider
+        saveSettings()
+    }
+
+    function setPinnedApps(apps) {
+        pinnedApps = apps
+        saveSettings()
+    }
+
+    function addPinnedApp(appId) {
+        if (!appId)
+            return
+        var currentPinned = [...pinnedApps]
+        if (currentPinned.indexOf(appId) === -1) {
+            currentPinned.push(appId)
+            setPinnedApps(currentPinned)
+        }
+    }
+
+    function removePinnedApp(appId) {
+        if (!appId)
+            return
+        var currentPinned = pinnedApps.filter(id => id !== appId)
+        setPinnedApps(currentPinned)
+    }
+
+    function isPinnedApp(appId) {
+        return appId && pinnedApps.indexOf(appId) !== -1
+    }
+
+    function addRecentColor(color) {
+        const colorStr = color.toString()
+        let recent = recentColors.slice()
+        recent = recent.filter(c => c !== colorStr)
+        recent.unshift(colorStr)
+        if (recent.length > 5) recent = recent.slice(0, 5)
+        recentColors = recent
+        saveSettings()
+    }
+
+    function setShowThirdPartyPlugins(enabled) {
+        showThirdPartyPlugins = enabled
         saveSettings()
     }
 
@@ -596,64 +599,56 @@ Singleton {
         saveSettings()
     }
 
-    function setWallpaperTransition(transition) {
-        wallpaperTransition = transition
+    function setLastBrightnessDevice(device) {
+        lastBrightnessDevice = device
         saveSettings()
     }
 
-    function setAcMonitorTimeout(timeout) {
-        acMonitorTimeout = timeout
+    function setSelectedGpuIndex(index) {
+        selectedGpuIndex = index
         saveSettings()
     }
 
-    function setAcLockTimeout(timeout) {
-        acLockTimeout = timeout
+    function setNvidiaGpuTempEnabled(enabled) {
+        nvidiaGpuTempEnabled = enabled
         saveSettings()
     }
 
-    function setAcSuspendTimeout(timeout) {
-        acSuspendTimeout = timeout
+    function setNonNvidiaGpuTempEnabled(enabled) {
+        nonNvidiaGpuTempEnabled = enabled
         saveSettings()
     }
 
-    function setBatteryMonitorTimeout(timeout) {
-        batteryMonitorTimeout = timeout
+    function setEnabledGpuPciIds(pciIds) {
+        enabledGpuPciIds = pciIds
         saveSettings()
     }
 
-    function setBatteryLockTimeout(timeout) {
-        batteryLockTimeout = timeout
-        saveSettings()
+    function syncWallpaperForCurrentMode() {
+        if (!perModeWallpaper) return
+
+        if (perMonitorWallpaper) {
+            monitorWallpapers = isLightMode ? Object.assign({}, monitorWallpapersLight) : Object.assign({}, monitorWallpapersDark)
+            return
+        }
+
+        wallpaperPath = isLightMode ? wallpaperPathLight : wallpaperPathDark
     }
 
-    function setBatterySuspendTimeout(timeout) {
-        batterySuspendTimeout = timeout
-        saveSettings()
+    function getMonitorWallpaper(screenName) {
+        if (!perMonitorWallpaper) {
+            return wallpaperPath
+        }
+        return monitorWallpapers[screenName] || wallpaperPath
     }
 
-    function setAcHibernateTimeout(timeout) {
-        acHibernateTimeout = timeout
-        saveSettings()
-    }
-
-    function setBatteryHibernateTimeout(timeout) {
-        batteryHibernateTimeout = timeout
-        saveSettings()
-    }
-
-    function setLockBeforeSuspend(enabled) {
-        lockBeforeSuspend = enabled
-        saveSettings()
-    }
-
-    function setLoginctlLockIntegration(enabled) {
-        loginctlLockIntegration = enabled
-        saveSettings()
-    }
-
-    function setShowThirdPartyPlugins(enabled) {
-        showThirdPartyPlugins = enabled
-        saveSettings()
+    function getMonitorCyclingSettings(screenName) {
+        return monitorCyclingSettings[screenName] || {
+            enabled: false,
+            mode: "interval",
+            interval: 300,
+            time: "06:00"
+        }
     }
 
     FileView {

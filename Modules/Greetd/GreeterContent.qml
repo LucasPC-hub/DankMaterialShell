@@ -168,7 +168,7 @@ Item {
             if (screenName && currentWallpaper && currentWallpaper.startsWith("we:")) {
                 const cacheHome = StandardPaths.writableLocation(StandardPaths.CacheLocation).toString()
                 const baseDir = Paths.strip(cacheHome)
-                const screenshotPath = baseDir + "/dankshell/we_screenshots" + "/" + currentWallpaper.substring(3) + ".jpg"
+                const screenshotPath = baseDir + "/DankMaterialShell/we_screenshots" + "/" + currentWallpaper.substring(3) + ".jpg"
                 return screenshotPath
             }
             return (currentWallpaper && !currentWallpaper.startsWith("#")) ? currentWallpaper : ""

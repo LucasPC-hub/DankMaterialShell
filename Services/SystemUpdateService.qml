@@ -10,6 +10,7 @@ import qs.Common
 Singleton {
     id: root
 
+    property int refCount: 0
     property var availableUpdates: []
     property bool isChecking: false
     property bool hasError: false
@@ -256,7 +257,7 @@ Singleton {
     Timer {
         interval: 30 * 60 * 1000
         repeat: true
-        running: distributionSupported && pkgManager
+        running: refCount > 0 && distributionSupported && (pkgManager || updChecker)
         onTriggered: checkForUpdates()
     }
 }

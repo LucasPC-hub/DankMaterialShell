@@ -23,10 +23,10 @@ Singleton {
     property bool _enableGate: true
 
     readonly property bool isOnBattery: BatteryService.batteryAvailable && !BatteryService.isPluggedIn
-    readonly property int monitorTimeout: isOnBattery ? SessionData.batteryMonitorTimeout : SessionData.acMonitorTimeout
-    readonly property int lockTimeout: isOnBattery ? SessionData.batteryLockTimeout : SessionData.acLockTimeout
-    readonly property int suspendTimeout: isOnBattery ? SessionData.batterySuspendTimeout : SessionData.acSuspendTimeout
-    readonly property int hibernateTimeout: isOnBattery ? SessionData.batteryHibernateTimeout : SessionData.acHibernateTimeout
+    readonly property int monitorTimeout: isOnBattery ? SettingsData.batteryMonitorTimeout : SettingsData.acMonitorTimeout
+    readonly property int lockTimeout: isOnBattery ? SettingsData.batteryLockTimeout : SettingsData.acLockTimeout
+    readonly property int suspendTimeout: isOnBattery ? SettingsData.batterySuspendTimeout : SettingsData.acSuspendTimeout
+    readonly property int hibernateTimeout: isOnBattery ? SettingsData.batteryHibernateTimeout : SettingsData.acHibernateTimeout
 
     onMonitorTimeoutChanged: _rearmIdleMonitors()
     onLockTimeoutChanged: _rearmIdleMonitors()
@@ -139,7 +139,7 @@ Singleton {
     Connections {
         target: SessionService
         function onPrepareForSleep() {
-            if (SessionData.lockBeforeSuspend) {
+            if (SettingsData.lockBeforeSuspend) {
                 root.lockRequested()
             }
         }

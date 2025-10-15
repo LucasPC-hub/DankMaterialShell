@@ -7,13 +7,6 @@
     "comment": ""
   },
   {
-    "term": "%1/%2",
-    "translation": "",
-    "context": "",
-    "reference": "",
-    "comment": ""
-  },
-  {
     "term": "(Unnamed)",
     "translation": "",
     "context": "",
@@ -176,6 +169,13 @@
   },
   {
     "term": "Animation Speed",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Anonymous Identity (optional)",
     "translation": "",
     "context": "",
     "reference": "",
@@ -399,6 +399,13 @@
     "comment": ""
   },
   {
+    "term": "Automatically lock the screen when the system prepares to suspend",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Available",
     "translation": "",
     "context": "",
@@ -442,6 +449,13 @@
   },
   {
     "term": "Battery not detected - only AC power settings available",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Bind lock screen to dbus signals from loginctl. Disable if using an external lock screen",
     "translation": "",
     "context": "",
     "reference": "",
@@ -1120,6 +1134,13 @@
     "comment": ""
   },
   {
+    "term": "Enable System Sounds",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Enable Weather",
     "translation": "",
     "context": "",
@@ -1134,6 +1155,13 @@
     "comment": ""
   },
   {
+    "term": "Enable fingerprint authentication",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Enable loginctl lock integration",
     "translation": "",
     "context": "",
@@ -1142,6 +1170,13 @@
   },
   {
     "term": "End",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Enter credentials for ",
     "translation": "",
     "context": "",
     "reference": "",
@@ -1163,6 +1198,13 @@
   },
   {
     "term": "Enter filename...",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Enter password for ",
     "translation": "",
     "context": "",
     "reference": "",
@@ -1457,13 +1499,6 @@
   },
   {
     "term": "Icon Theme",
-    "translation": "",
-    "context": "",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "Idle & Lock Screen",
     "translation": "",
     "context": "",
     "reference": "",
@@ -1904,6 +1939,13 @@
     "comment": ""
   },
   {
+    "term": "New Notification",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "New York, NY",
     "translation": "",
     "context": "",
@@ -2135,6 +2177,13 @@
     "comment": ""
   },
   {
+    "term": "Password",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Per-Mode Wallpapers",
     "translation": "",
     "context": "",
@@ -2191,6 +2240,41 @@
     "comment": ""
   },
   {
+    "term": "Play sound when new notification arrives",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Play sound when power cable is connected",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Play sound when volume is adjusted",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Play sounds for system events",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Plugged In",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Plugin Directory",
     "translation": "",
     "context": "",
@@ -2234,6 +2318,20 @@
   },
   {
     "term": "Position",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Power & Security",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Power Action Confirmation",
     "translation": "",
     "context": "",
     "reference": "",
@@ -2331,6 +2429,13 @@
     "comment": ""
   },
   {
+    "term": "Realm / Domain (optional)",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Reboot",
     "translation": "",
     "context": "",
@@ -2360,6 +2465,13 @@
   },
   {
     "term": "Remove",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Request confirmation on power off, restart, suspend, hibernate and logout actions",
     "translation": "",
     "context": "",
     "reference": "",
@@ -2527,6 +2639,13 @@
     "comment": ""
   },
   {
+    "term": "Select system sound theme",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Select which transitions to include in randomization",
     "translation": "",
     "context": "",
@@ -2535,6 +2654,13 @@
   },
   {
     "term": "Separator",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Server Domain for certificate (optional)",
     "translation": "",
     "context": "",
     "reference": "",
@@ -2563,6 +2689,13 @@
   },
   {
     "term": "Shift+Del: Clear All • Esc: Close",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Show Confirmation on Power Actions",
     "translation": "",
     "context": "",
     "reference": "",
@@ -2625,6 +2758,13 @@
     "comment": ""
   },
   {
+    "term": "Show power, restart, and logout buttons on the lock screen",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Show weather information in top bar and control center",
     "translation": "",
     "context": "",
@@ -2661,6 +2801,20 @@
   },
   {
     "term": "Size Offset",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Sort Alphabetically",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Sound Theme",
     "translation": "",
     "context": "",
     "reference": "",
@@ -3052,6 +3206,13 @@
     "comment": ""
   },
   {
+    "term": "Use System Theme",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Use custom command for update your system",
     "translation": "",
     "context": "",
@@ -3059,7 +3220,21 @@
     "comment": ""
   },
   {
+    "term": "Use fingerprint reader for lock screen authentication (requires enrolled fingerprints)",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Use light theme instead of dark theme",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Use sound theme from system settings",
     "translation": "",
     "context": "",
     "reference": "",
@@ -3074,6 +3249,13 @@
   },
   {
     "term": "Used",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Username",
     "translation": "",
     "context": "",
     "reference": "",
@@ -3136,6 +3318,13 @@
     "comment": ""
   },
   {
+    "term": "Volume Changed",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Wallpaper",
     "translation": "",
     "context": "",
@@ -3158,6 +3347,13 @@
   },
   {
     "term": "Weather Widget",
+    "translation": "",
+    "context": "",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "When enabled, apps are sorted alphabetically. When disabled, apps are sorted by usage frequency.",
     "translation": "",
     "context": "",
     "reference": "",

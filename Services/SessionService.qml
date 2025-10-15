@@ -60,7 +60,7 @@ Singleton {
             detectHibernateProcess.running = true
             detectPrimeRunProcess.running = true
             console.log("SessionService: Native inhibitor available:", nativeInhibitorAvailable)
-            if (!SessionData.loginctlLockIntegration) {
+            if (!SettingsData.loginctlLockIntegration) {
                 console.log("SessionService: loginctl lock integration disabled by user")
                 return
             }
@@ -142,8 +142,8 @@ Singleton {
         if (usePrimeRun && hasPrimeRun) {
             cmd = ["prime-run"].concat(cmd)
         }
-        if (SessionData.launchPrefix && SessionData.launchPrefix.length > 0) {
-            const launchPrefix = SessionData.launchPrefix.trim().split(" ")
+        if (SettingsData.launchPrefix && SettingsData.launchPrefix.length > 0) {
+            const launchPrefix = SettingsData.launchPrefix.trim().split(" ")
             cmd = launchPrefix.concat(cmd)
         }
 
@@ -158,8 +158,8 @@ Singleton {
         if (usePrimeRun && hasPrimeRun) {
             cmd = ["prime-run"].concat(cmd)
         }
-        if (SessionData.launchPrefix && SessionData.launchPrefix.length > 0) {
-            const launchPrefix = SessionData.launchPrefix.trim().split(" ")
+        if (SettingsData.launchPrefix && SettingsData.launchPrefix.length > 0) {
+            const launchPrefix = SettingsData.launchPrefix.trim().split(" ")
             cmd = launchPrefix.concat(cmd)
         }
 
@@ -294,10 +294,10 @@ Singleton {
     }
 
     Connections {
-        target: SessionData
+        target: SettingsData
 
         function onLoginctlLockIntegrationChanged() {
-            if (SessionData.loginctlLockIntegration) {
+            if (SettingsData.loginctlLockIntegration) {
                 if (socketPath && socketPath.length > 0 && loginctlAvailable) {
                     if (!stateInitialized) {
                         stateInitialized = true
@@ -311,7 +311,7 @@ Singleton {
         }
 
         function onLockBeforeSuspendChanged() {
-            if (SessionData.loginctlLockIntegration) {
+            if (SettingsData.loginctlLockIntegration) {
                 syncLockBeforeSuspend()
             }
         }
@@ -319,7 +319,7 @@ Singleton {
 
     Connections {
         target: DMSService
-        enabled: SessionData.loginctlLockIntegration
+        enabled: SettingsData.loginctlLockIntegration
 
         function onLoginctlStateUpdate(data) {
             updateLoginctlState(data)
@@ -341,7 +341,7 @@ Singleton {
 
         if (DMSService.capabilities.includes("loginctl")) {
             loginctlAvailable = true
-            if (SessionData.loginctlLockIntegration && !stateInitialized) {
+            if (SettingsData.loginctlLockIntegration && !stateInitialized) {
                 stateInitialized = true
                 getLoginctlState()
                 syncLockBeforeSuspend()
@@ -366,12 +366,12 @@ Singleton {
         if (!loginctlAvailable) return
 
         DMSService.sendRequest("loginctl.setLockBeforeSuspend", {
-            enabled: SessionData.lockBeforeSuspend
+            enabled: SettingsData.lockBeforeSuspend
         }, response => {
             if (response.error) {
                 console.warn("SessionService: Failed to sync lock before suspend:", response.error)
             } else {
-                console.log("SessionService: Synced lock before suspend:", SessionData.lockBeforeSuspend)
+                console.log("SessionService: Synced lock before suspend:", SettingsData.lockBeforeSuspend)
             }
         })
     }

@@ -449,6 +449,8 @@ DankPopout {
                                             color: Theme.surfaceText
                                             font.weight: Font.Medium
                                             elide: Text.ElideRight
+                                            wrapMode: Text.NoWrap
+                                            maximumLineCount: 1
                                         }
 
                                         StyledText {
@@ -620,8 +622,8 @@ DankPopout {
                                         font.weight: Font.Medium
                                         elide: Text.ElideRight
                                         horizontalAlignment: Text.AlignHCenter
-                                        maximumLineCount: 2
-                                        wrapMode: Text.WordWrap
+                                        maximumLineCount: 1
+                                        wrapMode: Text.NoWrap
                                     }
                                 }
 
@@ -665,8 +667,8 @@ DankPopout {
         id: contextMenu
 
         property var currentApp: null
-
-        readonly property string appId: (currentApp && currentApp.desktopEntry) ? (currentApp.desktopEntry.id || currentApp.desktopEntry.execString || "") : ""
+        readonly property var desktopEntry: (currentApp && !currentApp.isPlugin && appLauncher && appLauncher._uniqueApps && currentApp.appIndex >= 0 && currentApp.appIndex < appLauncher._uniqueApps.length) ? appLauncher._uniqueApps[currentApp.appIndex] : null
+        readonly property string appId: desktopEntry ? (desktopEntry.id || desktopEntry.execString || "") : ""
         readonly property bool isPinned: appId && SessionData.isPinnedApp(appId)
 
         function show(x, y, app) {
@@ -768,7 +770,7 @@ DankPopout {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        if (!contextMenu.currentApp || !contextMenu.currentApp.desktopEntry) {
+                        if (!contextMenu.desktopEntry) {
                             return
                         }
 
@@ -797,7 +799,7 @@ DankPopout {
             }
 
             Repeater {
-                model: contextMenu.currentApp && contextMenu.currentApp.desktopEntry && contextMenu.currentApp.desktopEntry.actions ? contextMenu.currentApp.desktopEntry.actions : []
+                model: contextMenu.desktopEntry && contextMenu.desktopEntry.actions ? contextMenu.desktopEntry.actions : []
 
                 Rectangle {
                     width: Math.max(parent.width, actionRow.implicitWidth + Theme.spacingS * 2)
@@ -842,9 +844,11 @@ DankPopout {
                         hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
                         onClicked: {
-                            if (modelData && contextMenu.currentApp && contextMenu.currentApp.desktopEntry) {
-                                SessionService.launchDesktopAction(contextMenu.currentApp.desktopEntry, modelData)
-                                appLauncher.appLaunched(contextMenu.currentApp)
+                            if (modelData && contextMenu.desktopEntry) {
+                                SessionService.launchDesktopAction(contextMenu.desktopEntry, modelData)
+                                if (contextMenu.currentApp) {
+                                    appLauncher.appLaunched(contextMenu.currentApp)
+                                }
                             }
                             contextMenu.hide()
                         }
@@ -853,7 +857,7 @@ DankPopout {
             }
 
             Rectangle {
-                visible: contextMenu.currentApp && contextMenu.currentApp.desktopEntry && contextMenu.currentApp.desktopEntry.actions && contextMenu.currentApp.desktopEntry.actions.length > 0
+                visible: contextMenu.desktopEntry && contextMenu.desktopEntry.actions && contextMenu.desktopEntry.actions.length > 0
                 width: parent.width - Theme.spacingS * 2
                 height: 5
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -963,9 +967,11 @@ DankPopout {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        if (contextMenu.currentApp && contextMenu.currentApp.desktopEntry) {
-                            SessionService.launchDesktopEntry(contextMenu.currentApp.desktopEntry, true)
-                            appLauncher.appLaunched(contextMenu.currentApp)
+                        if (contextMenu.desktopEntry) {
+                            SessionService.launchDesktopEntry(contextMenu.desktopEntry, true)
+                            if (contextMenu.currentApp) {
+                                appLauncher.appLaunched(contextMenu.currentApp)
+                            }
                         }
                         contextMenu.hide()
                     }

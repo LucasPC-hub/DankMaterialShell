@@ -1,4 +1,4 @@
-name: DMS Stable Release to Copr
+name: DMS Copr Stable Release
 
 on:
   release:
@@ -115,6 +115,7 @@ jobs:
           Recommends:     wl-clipboard
           Recommends:     gammastep
           Recommends:     NetworkManager
+          Recommends:     qt6-qtmultimedia
           Suggests:       qt6ct
 
           %description

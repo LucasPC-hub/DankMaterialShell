@@ -20,6 +20,10 @@ Rectangle {
 
     signal clicked()
 
+    Ref {
+        service: SystemUpdateService
+    }
+
     width: isVertical ? widgetThickness : (updaterIcon.width + horizontalPadding * 2)
     height: isVertical ? widgetThickness : widgetThickness
     radius: SettingsData.dankBarNoBackground ? 0 : Theme.cornerRadius

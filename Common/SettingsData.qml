@@ -12,6 +12,8 @@ import qs.Services
 Singleton {
     id: root
 
+    readonly property int settingsConfigVersion: 1
+
     readonly property bool isGreeterMode: Quickshell.env("DMS_RUN_GREETER") === "1" || Quickshell.env("DMS_RUN_GREETER") === "true"
 
     enum Position {
@@ -29,7 +31,22 @@ Singleton {
         Long
     }
 
-    // Theme settings
+    readonly property string defaultFontFamily: "Inter Variable"
+    readonly property string defaultMonoFontFamily: "Fira Code"
+    readonly property string _homeUrl: StandardPaths.writableLocation(StandardPaths.HomeLocation)
+    readonly property string _configUrl: StandardPaths.writableLocation(StandardPaths.ConfigLocation)
+    readonly property string _configDir: Paths.strip(_configUrl)
+    readonly property string pluginSettingsPath: _configDir + "/DankMaterialShell/plugin_settings.json"
+
+    property bool _loading: false
+    property bool _pluginSettingsLoading: false
+    property bool hasTriedDefaultSettings: false
+    property var pluginSettings: ({})
+
+    property alias dankBarLeftWidgetsModel: leftWidgetsModel
+    property alias dankBarCenterWidgetsModel: centerWidgetsModel
+    property alias dankBarRightWidgetsModel: rightWidgetsModel
+
     property string currentThemeName: "blue"
     property string customThemeFile: ""
     property string matugenScheme: "scheme-tonal-spot"
@@ -38,12 +55,15 @@ Singleton {
     property real dankBarWidgetTransparency: 1.0
     property real popupTransparency: 1.0
     property real dockTransparency: 1
+    property string widgetBackgroundColor: "sch"
+    property string surfaceBase: "s"
+    property real cornerRadius: 12
+
     property bool use24HourClock: true
     property bool useFahrenheit: false
     property bool nightModeEnabled: false
-    property string weatherLocation: "New York, NY"
-    property string weatherCoordinates: "40.7128,-74.0060"
-    property bool useAutoLocation: false
+    property int animationSpeed: SettingsData.AnimationSpeed.Short
+
     property bool showLauncherButton: true
     property bool showWorkspaceSwitcher: true
     property bool showFocusedWindow: true
@@ -61,6 +81,7 @@ Singleton {
     property bool showNotificationButton: true
     property bool showBattery: true
     property bool showControlCenterButton: true
+
     property bool controlCenterShowNetworkIcon: true
     property bool controlCenterShowBluetoothIcon: true
     property bool controlCenterShowAudioIcon: true
@@ -74,6 +95,7 @@ Singleton {
         {"id": "nightMode", "enabled": true, "width": 50},
         {"id": "darkMode", "enabled": true, "width": 50}
     ]
+
     property bool showWorkspaceIndex: false
     property bool showWorkspacePadding: false
     property bool showWorkspaceApps: false
@@ -88,23 +110,30 @@ Singleton {
     property string clockDateFormat: ""
     property string lockDateFormat: ""
     property int mediaSize: 1
+
     property var dankBarLeftWidgets: ["launcherButton", "workspaceSwitcher", "focusedWindow"]
     property var dankBarCenterWidgets: ["music", "clock", "weather"]
     property var dankBarRightWidgets: ["systemTray", "clipboard", "cpuUsage", "memUsage", "notificationButton", "battery", "controlCenterButton"]
     property var dankBarWidgetOrder: []
-    property alias dankBarLeftWidgetsModel: leftWidgetsModel
-    property alias dankBarCenterWidgetsModel: centerWidgetsModel
-    property alias dankBarRightWidgetsModel: rightWidgetsModel
+
     property string appLauncherViewMode: "list"
     property string spotlightModalViewMode: "list"
     property bool sortAppsAlphabetically: false
+
+    property string weatherLocation: "New York, NY"
+    property string weatherCoordinates: "40.7128,-74.0060"
+    property bool useAutoLocation: false
+    property bool weatherEnabled: true
+
     property string networkPreference: "auto"
+
     property string iconTheme: "System Default"
     property var availableIconThemes: ["System Default"]
     property string systemDefaultIconTheme: ""
     property bool qt5ctAvailable: false
     property bool qt6ctAvailable: false
     property bool gtkAvailable: false
+
     property string launcherLogoMode: "apps"
     property string launcherLogoCustomPath: ""
     property string launcherLogoColorOverride: ""
@@ -112,22 +141,19 @@ Singleton {
     property real launcherLogoBrightness: 0.5
     property real launcherLogoContrast: 1
     property int launcherLogoSizeOffset: 0
-    property bool weatherEnabled: true
+
     property string fontFamily: "Inter Variable"
     property string monoFontFamily: "Fira Code"
     property int fontWeight: Font.Normal
     property real fontScale: 1.0
     property real dankBarFontScale: 1.0
+
     property bool notepadUseMonospace: true
     property string notepadFontFamily: ""
     property real notepadFontSize: 14
     property bool notepadShowLineNumbers: false
     property real notepadTransparencyOverride: -1
     property real notepadLastCustomTransparency: 0.7
-    property bool soundsEnabled: true
-    property bool soundNewNotification: true
-    property bool soundVolumeChanged: true
-    property bool soundPluggedIn: true
 
     onNotepadUseMonospaceChanged: saveSettings()
     onNotepadFontFamilyChanged: saveSettings()
@@ -140,8 +166,28 @@ Singleton {
         saveSettings()
     }
     onNotepadLastCustomTransparencyChanged: saveSettings()
+
+    property bool soundsEnabled: true
+    property bool useSystemSoundTheme: false
+    property bool soundNewNotification: true
+    property bool soundVolumeChanged: true
+    property bool soundPluggedIn: true
+
+    property int acMonitorTimeout: 0
+    property int acLockTimeout: 0
+    property int acSuspendTimeout: 0
+    property int acHibernateTimeout: 0
+    property int batteryMonitorTimeout: 0
+    property int batteryLockTimeout: 0
+    property int batterySuspendTimeout: 0
+    property int batteryHibernateTimeout: 0
+    property bool lockBeforeSuspend: false
+    property bool loginctlLockIntegration: true
+    property string launchPrefix: ""
+
     property bool gtkThemingEnabled: false
     property bool qtThemingEnabled: false
+
     property bool showDock: false
     property bool dockAutoHide: false
     property bool dockGroupByApp: false
@@ -149,7 +195,7 @@ Singleton {
     property int dockPosition: SettingsData.Position.Bottom
     property real dockSpacing: 4
     property real dockBottomGap: 0
-    property real cornerRadius: 12
+
     property bool notificationOverlayEnabled: false
     property bool dankBarAutoHide: false
     property bool dankBarOpenOnOverview: false
@@ -157,6 +203,9 @@ Singleton {
     property real dankBarSpacing: 4
     property real dankBarBottomGap: 0
     property real dankBarInnerPadding: 4
+    property int dankBarPosition: SettingsData.Position.Top
+    property bool dankBarIsVertical: dankBarPosition === SettingsData.Position.Left || dankBarPosition === SettingsData.Position.Right
+
     property bool dankBarSquareCorners: false
     property bool dankBarNoBackground: false
     property bool dankBarGothCornersEnabled: false
@@ -164,84 +213,47 @@ Singleton {
     property string dankBarBorderColor: "surfaceText"
     property real dankBarBorderOpacity: 1.0
     property real dankBarBorderThickness: 1
-    property bool popupGapsAuto: true
-    property int popupGapsManual: 4
 
     onDankBarBorderColorChanged: saveSettings()
     onDankBarBorderOpacityChanged: saveSettings()
     onDankBarBorderThicknessChanged: saveSettings()
 
-    property int dankBarPosition: SettingsData.Position.Top
-    property bool dankBarIsVertical: dankBarPosition === SettingsData.Position.Left || dankBarPosition === SettingsData.Position.Right
+    property bool popupGapsAuto: true
+    property int popupGapsManual: 4
+
     property bool lockScreenShowPowerActions: true
     property bool enableFprint: false
     property int maxFprintTries: 3
     property bool fprintdAvailable: false
     property bool hideBrightnessSlider: false
-    property string widgetBackgroundColor: "sch"
-    property string surfaceBase: "s"
+
     property int notificationTimeoutLow: 5000
     property int notificationTimeoutNormal: 5000
     property int notificationTimeoutCritical: 0
     property int notificationPopupPosition: SettingsData.Position.Top
+
     property bool osdAlwaysShowValue: false
+
+    property bool powerActionConfirm: true
+
     property bool updaterUseCustomCommand: false
     property string updaterCustomCommand: ""
     property string updaterTerminalAdditionalParams: ""
+
     property var screenPreferences: ({})
-    property int animationSpeed: SettingsData.AnimationSpeed.Short
-    readonly property string defaultFontFamily: "Inter Variable"
-    readonly property string defaultMonoFontFamily: "Fira Code"
-    readonly property string _homeUrl: StandardPaths.writableLocation(StandardPaths.HomeLocation)
-    readonly property string _configUrl: StandardPaths.writableLocation(StandardPaths.ConfigLocation)
-    readonly property string _configDir: Paths.strip(_configUrl)
-    readonly property string pluginSettingsPath: _configDir + "/DankMaterialShell/plugin_settings.json"
 
     signal forceDankBarLayoutRefresh
     signal forceDockLayoutRefresh
     signal widgetDataChanged
     signal workspaceIconsUpdated
 
-    property bool _loading: false
-    property bool _pluginSettingsLoading: false
-
-    property var pluginSettings: ({})
-
-    function getEffectiveTimeFormat() {
-        if (use24HourClock) {
-            return Locale.ShortFormat
-        } else {
-            return "h:mm AP"
+    Component.onCompleted: {
+        if (!isGreeterMode) {
+            loadSettings()
+            fontCheckTimer.start()
+            initializeListModels()
+            fprintdDetectionProcess.running = true
         }
-    }
-
-    function getEffectiveClockDateFormat() {
-        return clockDateFormat && clockDateFormat.length > 0 ? clockDateFormat : "ddd d"
-    }
-
-    function getEffectiveLockDateFormat() {
-        return lockDateFormat && lockDateFormat.length > 0 ? lockDateFormat : Locale.LongFormat
-    }
-
-    function initializeListModels() {
-        // ! Hack-ish to add all properties to the listmodel once
-        // ! allows the properties to be bound on new widget addtions
-        var dummyItem = {
-            "widgetId": "dummy",
-            "enabled": true,
-            "size": 20,
-            "selectedGpuIndex": 0,
-            "pciId": "",
-            "mountPath": "/",
-            "minimumWidth": true
-        }
-        leftWidgetsModel.append(dummyItem)
-        centerWidgetsModel.append(dummyItem)
-        rightWidgetsModel.append(dummyItem)
-
-        updateListModel(leftWidgetsModel, dankBarLeftWidgets)
-        updateListModel(centerWidgetsModel, dankBarCenterWidgets)
-        updateListModel(rightWidgetsModel, dankBarRightWidgets)
     }
 
     function loadSettings() {
@@ -283,7 +295,6 @@ Singleton {
                     pluginSettings = settings.pluginSettings
                     shouldMigrate = true
                 }
-                // Auto-migrate from old theme system
                 if (settings.themeIndex !== undefined || settings.themeIsDynamic !== undefined) {
                     const themeNames = ["blue", "deepBlue", "purple", "green", "orange", "red", "cyan", "pink", "amber", "coral"]
                     if (settings.themeIsDynamic) {
@@ -406,6 +417,7 @@ Singleton {
                 notepadTransparencyOverride = settings.notepadTransparencyOverride !== undefined ? settings.notepadTransparencyOverride : -1
                 notepadLastCustomTransparency = settings.notepadLastCustomTransparency !== undefined ? settings.notepadLastCustomTransparency : 0.95
                 soundsEnabled = settings.soundsEnabled !== undefined ? settings.soundsEnabled : true
+                useSystemSoundTheme = settings.useSystemSoundTheme !== undefined ? settings.useSystemSoundTheme : false
                 soundNewNotification = settings.soundNewNotification !== undefined ? settings.soundNewNotification : true
                 soundVolumeChanged = settings.soundVolumeChanged !== undefined ? settings.soundVolumeChanged : true
                 soundPluggedIn = settings.soundPluggedIn !== undefined ? settings.soundPluggedIn : true
@@ -428,6 +440,7 @@ Singleton {
                 notificationTimeoutCritical = settings.notificationTimeoutCritical !== undefined ? settings.notificationTimeoutCritical : 0
                 notificationPopupPosition = settings.notificationPopupPosition !== undefined ? settings.notificationPopupPosition : SettingsData.Position.Top
                 osdAlwaysShowValue = settings.osdAlwaysShowValue !== undefined ? settings.osdAlwaysShowValue : false
+                powerActionConfirm = settings.powerActionConfirm !== undefined ? settings.powerActionConfirm : true
                 updaterUseCustomCommand = settings.updaterUseCustomCommand !== undefined ? settings.updaterUseCustomCommand : false;
                 updaterCustomCommand = settings.updaterCustomCommand !== undefined ? settings.updaterCustomCommand : "";
                 updaterTerminalAdditionalParams = settings.updaterTerminalAdditionalParams !== undefined ? settings.updaterTerminalAdditionalParams : "";
@@ -452,6 +465,24 @@ Singleton {
                 surfaceBase = settings.surfaceBase !== undefined ? settings.surfaceBase : "s"
                 screenPreferences = settings.screenPreferences !== undefined ? settings.screenPreferences : ({})
                 animationSpeed = settings.animationSpeed !== undefined ? settings.animationSpeed : SettingsData.AnimationSpeed.Short
+                acMonitorTimeout = settings.acMonitorTimeout !== undefined ? settings.acMonitorTimeout : 0
+                acLockTimeout = settings.acLockTimeout !== undefined ? settings.acLockTimeout : 0
+                acSuspendTimeout = settings.acSuspendTimeout !== undefined ? settings.acSuspendTimeout : 0
+                acHibernateTimeout = settings.acHibernateTimeout !== undefined ? settings.acHibernateTimeout : 0
+                batteryMonitorTimeout = settings.batteryMonitorTimeout !== undefined ? settings.batteryMonitorTimeout : 0
+                batteryLockTimeout = settings.batteryLockTimeout !== undefined ? settings.batteryLockTimeout : 0
+                batterySuspendTimeout = settings.batterySuspendTimeout !== undefined ? settings.batterySuspendTimeout : 0
+                batteryHibernateTimeout = settings.batteryHibernateTimeout !== undefined ? settings.batteryHibernateTimeout : 0
+                lockBeforeSuspend = settings.lockBeforeSuspend !== undefined ? settings.lockBeforeSuspend : false
+                loginctlLockIntegration = settings.loginctlLockIntegration !== undefined ? settings.loginctlLockIntegration : true
+                launchPrefix = settings.launchPrefix !== undefined ? settings.launchPrefix : ""
+
+                if (settings.configVersion === undefined) {
+                    migrateFromUndefinedToV1(settings)
+                    cleanupUnusedKeys()
+                    saveSettings()
+                }
+
                 applyStoredTheme()
                 detectAvailableIconThemes()
                 detectQtTools()
@@ -553,6 +584,7 @@ Singleton {
                                                 "notepadTransparencyOverride": notepadTransparencyOverride,
                                                 "notepadLastCustomTransparency": notepadLastCustomTransparency,
                                                 "soundsEnabled": soundsEnabled,
+                                                "useSystemSoundTheme": useSystemSoundTheme,
                                                 "soundNewNotification": soundNewNotification,
                                                 "soundVolumeChanged": soundVolumeChanged,
                                                 "soundPluggedIn": soundPluggedIn,
@@ -594,11 +626,24 @@ Singleton {
                                                 "notificationTimeoutCritical": notificationTimeoutCritical,
                                                 "notificationPopupPosition": notificationPopupPosition,
                                                 "osdAlwaysShowValue": osdAlwaysShowValue,
-				                "updaterUseCustomCommand": updaterUseCustomCommand,
-				                "updaterCustomCommand": updaterCustomCommand,
-				                "updaterTerminalAdditionalParams": updaterTerminalAdditionalParams,
+                                                "powerActionConfirm": powerActionConfirm,
+                                                "updaterUseCustomCommand": updaterUseCustomCommand,
+                                                "updaterCustomCommand": updaterCustomCommand,
+                                                "updaterTerminalAdditionalParams": updaterTerminalAdditionalParams,
                                                 "screenPreferences": screenPreferences,
-                                                "animationSpeed": animationSpeed
+                                                "animationSpeed": animationSpeed,
+                                                "acMonitorTimeout": acMonitorTimeout,
+                                                "acLockTimeout": acLockTimeout,
+                                                "acSuspendTimeout": acSuspendTimeout,
+                                                "acHibernateTimeout": acHibernateTimeout,
+                                                "batteryMonitorTimeout": batteryMonitorTimeout,
+                                                "batteryLockTimeout": batteryLockTimeout,
+                                                "batterySuspendTimeout": batterySuspendTimeout,
+                                                "batteryHibernateTimeout": batteryHibernateTimeout,
+                                                "lockBeforeSuspend": lockBeforeSuspend,
+                                                "loginctlLockIntegration": loginctlLockIntegration,
+                                                "launchPrefix": launchPrefix,
+                                                "configVersion": settingsConfigVersion
                                             }, null, 2))
     }
 
@@ -608,69 +653,138 @@ Singleton {
         pluginSettingsFile.setText(JSON.stringify(pluginSettings, null, 2))
     }
 
-    function setShowWorkspaceIndex(enabled) {
-        showWorkspaceIndex = enabled
-        saveSettings()
+    function migrateFromUndefinedToV1(settings) {
+        console.log("SettingsData: Migrating configuration from undefined to version 1")
     }
 
-    function setShowWorkspacePadding(enabled) {
-        showWorkspacePadding = enabled
-        saveSettings()
+    function cleanupUnusedKeys() {
+        const validKeys = [
+            "currentThemeName", "customThemeFile", "matugenScheme", "runUserMatugenTemplates",
+            "dankBarTransparency", "dankBarWidgetTransparency", "popupTransparency", "dockTransparency",
+            "use24HourClock", "useFahrenheit", "nightModeEnabled", "weatherLocation",
+            "weatherCoordinates", "useAutoLocation", "weatherEnabled", "showLauncherButton",
+            "showWorkspaceSwitcher", "showFocusedWindow", "showWeather", "showMusic",
+            "showClipboard", "showCpuUsage", "showMemUsage", "showCpuTemp", "showGpuTemp",
+            "selectedGpuIndex", "enabledGpuPciIds", "showSystemTray", "showClock",
+            "showNotificationButton", "showBattery", "showControlCenterButton",
+            "controlCenterShowNetworkIcon", "controlCenterShowBluetoothIcon", "controlCenterShowAudioIcon",
+            "controlCenterWidgets", "showWorkspaceIndex", "showWorkspacePadding", "showWorkspaceApps",
+            "maxWorkspaceIcons", "workspacesPerMonitor", "workspaceNameIcons", "waveProgressEnabled",
+            "clockCompactMode", "focusedWindowCompactMode", "runningAppsCompactMode",
+            "runningAppsCurrentWorkspace", "clockDateFormat", "lockDateFormat", "mediaSize",
+            "dankBarLeftWidgets", "dankBarCenterWidgets", "dankBarRightWidgets",
+            "appLauncherViewMode", "spotlightModalViewMode", "sortAppsAlphabetically",
+            "networkPreference", "iconTheme", "launcherLogoMode", "launcherLogoCustomPath",
+            "launcherLogoColorOverride", "launcherLogoColorInvertOnMode", "launcherLogoBrightness",
+            "launcherLogoContrast", "launcherLogoSizeOffset", "fontFamily", "monoFontFamily",
+            "fontWeight", "fontScale", "dankBarFontScale", "notepadUseMonospace",
+            "notepadFontFamily", "notepadFontSize", "notepadShowLineNumbers",
+            "notepadTransparencyOverride", "notepadLastCustomTransparency", "soundsEnabled",
+            "useSystemSoundTheme", "soundNewNotification", "soundVolumeChanged", "soundPluggedIn", "gtkThemingEnabled",
+            "qtThemingEnabled", "showDock", "dockAutoHide", "dockGroupByApp",
+            "dockOpenOnOverview", "dockPosition", "dockSpacing", "dockBottomGap",
+            "cornerRadius", "notificationOverlayEnabled", "dankBarAutoHide",
+            "dankBarOpenOnOverview", "dankBarVisible", "dankBarSpacing", "dankBarBottomGap",
+            "dankBarInnerPadding", "dankBarSquareCorners", "dankBarNoBackground",
+            "dankBarGothCornersEnabled", "dankBarBorderEnabled", "dankBarBorderColor",
+            "dankBarBorderOpacity", "dankBarBorderThickness", "popupGapsAuto", "popupGapsManual",
+            "dankBarPosition", "lockScreenShowPowerActions", "enableFprint", "maxFprintTries",
+            "hideBrightnessSlider", "widgetBackgroundColor", "surfaceBase",
+            "notificationTimeoutLow", "notificationTimeoutNormal", "notificationTimeoutCritical",
+            "notificationPopupPosition", "osdAlwaysShowValue", "powerActionConfirm",
+            "updaterUseCustomCommand", "updaterCustomCommand", "updaterTerminalAdditionalParams",
+            "screenPreferences", "animationSpeed", "acMonitorTimeout", "acLockTimeout",
+            "acSuspendTimeout", "acHibernateTimeout", "batteryMonitorTimeout", "batteryLockTimeout",
+            "batterySuspendTimeout", "batteryHibernateTimeout", "lockBeforeSuspend",
+            "loginctlLockIntegration", "launchPrefix", "configVersion"
+        ]
+
+        try {
+            const content = settingsFile.text()
+            if (!content || !content.trim()) return
+
+            const settings = JSON.parse(content)
+            let needsSave = false
+
+            for (const key in settings) {
+                if (!validKeys.includes(key)) {
+                    console.log("SettingsData: Removing unused key:", key)
+                    delete settings[key]
+                    needsSave = true
+                }
+            }
+
+            if (needsSave) {
+                settingsFile.setText(JSON.stringify(settings, null, 2))
+            }
+        } catch (e) {
+            console.warn("SettingsData: Failed to cleanup unused keys:", e.message)
+        }
     }
 
-    function setShowWorkspaceApps(enabled) {
-        showWorkspaceApps = enabled
-        saveSettings()
+    function getEffectiveTimeFormat() {
+        if (use24HourClock) {
+            return Locale.ShortFormat
+        } else {
+            return "h:mm AP"
+        }
     }
 
-    function setMaxWorkspaceIcons(maxIcons) {
-        maxWorkspaceIcons = maxIcons
-        saveSettings()
+    function getEffectiveClockDateFormat() {
+        return clockDateFormat && clockDateFormat.length > 0 ? clockDateFormat : "ddd d"
     }
 
-    function setWorkspacesPerMonitor(enabled) {
-        workspacesPerMonitor = enabled
-        saveSettings()
+    function getEffectiveLockDateFormat() {
+        return lockDateFormat && lockDateFormat.length > 0 ? lockDateFormat : Locale.LongFormat
     }
 
-    function setWaveProgressEnabled(enabled) {
-        waveProgressEnabled = enabled
-        saveSettings()
+    function initializeListModels() {
+        var dummyItem = {
+            "widgetId": "dummy",
+            "enabled": true,
+            "size": 20,
+            "selectedGpuIndex": 0,
+            "pciId": "",
+            "mountPath": "/",
+            "minimumWidth": true
+        }
+        leftWidgetsModel.append(dummyItem)
+        centerWidgetsModel.append(dummyItem)
+        rightWidgetsModel.append(dummyItem)
+
+        updateListModel(leftWidgetsModel, dankBarLeftWidgets)
+        updateListModel(centerWidgetsModel, dankBarCenterWidgets)
+        updateListModel(rightWidgetsModel, dankBarRightWidgets)
     }
 
-    function setUpdaterUseCustomCommandEnabled(enabled) {
-        updaterUseCustomCommand = enabled;
-        saveSettings();
-    }
+    function updateListModel(listModel, order) {
+        listModel.clear()
+        for (var i = 0; i < order.length; i++) {
+            var widgetId = typeof order[i] === "string" ? order[i] : order[i].id
+            var enabled = typeof order[i] === "string" ? true : order[i].enabled
+            var size = typeof order[i] === "string" ? undefined : order[i].size
+            var selectedGpuIndex = typeof order[i] === "string" ? undefined : order[i].selectedGpuIndex
+            var pciId = typeof order[i] === "string" ? undefined : order[i].pciId
+            var mountPath = typeof order[i] === "string" ? undefined : order[i].mountPath
+            var minimumWidth = typeof order[i] === "string" ? undefined : order[i].minimumWidth
+            var item = {
+                "widgetId": widgetId,
+                "enabled": enabled
+            }
+            if (size !== undefined)
+                item.size = size
+            if (selectedGpuIndex !== undefined)
+                item.selectedGpuIndex = selectedGpuIndex
+            if (pciId !== undefined)
+                item.pciId = pciId
+            if (mountPath !== undefined)
+                item.mountPath = mountPath
+            if (minimumWidth !== undefined)
+                item.minimumWidth = minimumWidth
 
-    function setUpdaterCustomCommand(command) {
-        updaterCustomCommand = command;
-        saveSettings();
-    }
-
-    function setUpdaterTerminalAdditionalParams(customArgs) {
-        updaterTerminalAdditionalParams = customArgs;
-        saveSettings();
-    }
-
-    function setWorkspaceNameIcon(workspaceName, iconData) {
-        var iconMap = JSON.parse(JSON.stringify(workspaceNameIcons))
-        iconMap[workspaceName] = iconData
-        workspaceNameIcons = iconMap
-        saveSettings()
-        workspaceIconsUpdated()
-    }
-
-    function removeWorkspaceNameIcon(workspaceName) {
-        var iconMap = JSON.parse(JSON.stringify(workspaceNameIcons))
-        delete iconMap[workspaceName]
-        workspaceNameIcons = iconMap
-        saveSettings()
-        workspaceIconsUpdated()
-    }
-
-    function getWorkspaceNameIcon(workspaceName) {
-        return workspaceNameIcons[workspaceName] || null
+            listModel.append(item)
+        }
+        widgetDataChanged()
     }
 
     function hasNamedWorkspaces() {
@@ -698,41 +812,6 @@ Singleton {
         return namedWorkspaces
     }
 
-    function setClockCompactMode(enabled) {
-        clockCompactMode = enabled
-        saveSettings()
-    }
-
-    function setFocusedWindowCompactMode(enabled) {
-        focusedWindowCompactMode = enabled
-        saveSettings()
-    }
-
-    function setRunningAppsCompactMode(enabled) {
-        runningAppsCompactMode = enabled
-        saveSettings()
-    }
-
-    function setRunningAppsCurrentWorkspace(enabled) {
-        runningAppsCurrentWorkspace = enabled
-        saveSettings()
-    }
-
-    function setClockDateFormat(format) {
-        clockDateFormat = format || ""
-        saveSettings()
-    }
-
-    function setLockDateFormat(format) {
-        lockDateFormat = format || ""
-        saveSettings()
-    }
-
-    function setMediaSize(size) {
-        mediaSize = size
-        saveSettings()
-    }
-
     function applyStoredTheme() {
         if (typeof Theme !== "undefined")
             Theme.switchTheme(currentThemeName, false, false)
@@ -741,6 +820,106 @@ Singleton {
                              if (typeof Theme !== "undefined")
                              Theme.switchTheme(currentThemeName, false, false)
                          })
+    }
+
+    function detectAvailableIconThemes() {
+        systemDefaultDetectionProcess.running = true
+    }
+
+    function detectQtTools() {
+        qtToolsDetectionProcess.running = true
+    }
+
+    function updateGtkIconTheme(themeName) {
+        var gtkThemeName = (themeName === "System Default") ? systemDefaultIconTheme : themeName
+        if (gtkThemeName !== "System Default" && gtkThemeName !== "") {
+            if (DMSService.apiVersion >= 3) {
+                PortalService.setSystemIconTheme(gtkThemeName)
+            }
+
+            var configScript = "mkdir -p " + _configDir + "/gtk-3.0 " + _configDir + "/gtk-4.0\n" + "\n" + "for config_dir in " + _configDir + "/gtk-3.0 " + _configDir + "/gtk-4.0; do\n"
+                    + "    settings_file=\"$config_dir/settings.ini\"\n" + "    if [ -f \"$settings_file\" ]; then\n" + "        if grep -q '^gtk-icon-theme-name=' \"$settings_file\"; then\n" + "            sed -i 's/^gtk-icon-theme-name=.*/gtk-icon-theme-name=" + gtkThemeName + "/' \"$settings_file\"\n" + "        else\n"
+                    + "            if grep -q '\\[Settings\\]' \"$settings_file\"; then\n" + "                sed -i '/\\[Settings\\]/a gtk-icon-theme-name=" + gtkThemeName + "' \"$settings_file\"\n" + "            else\n" + "                echo -e '\\n[Settings]\\ngtk-icon-theme-name=" + gtkThemeName + "' >> \"$settings_file\"\n" + "            fi\n"
+                    + "        fi\n" + "    else\n" + "        echo -e '[Settings]\\ngtk-icon-theme-name=" + gtkThemeName + "' > \"$settings_file\"\n" + "    fi\n" + "done\n" + "\n" + "rm -rf ~/.cache/icon-cache ~/.cache/thumbnails 2>/dev/null || true\n" + "pkill -HUP -f 'gtk' 2>/dev/null || true\n"
+            Quickshell.execDetached(["sh", "-lc", configScript])
+        }
+    }
+
+    function updateQtIconTheme(themeName) {
+        var qtThemeName = (themeName === "System Default") ? "" : themeName
+        var home = _shq(Paths.strip(root._homeUrl))
+        if (!qtThemeName) {
+            return
+        }
+        var script = "mkdir -p " + _configDir + "/qt5ct " + _configDir + "/qt6ct " + _configDir + "/environment.d 2>/dev/null || true\n" + "update_qt_icon_theme() {\n" + "  local config_file=\"$1\"\n"
+                + "  local theme_name=\"$2\"\n" + "  if [ -f \"$config_file\" ]; then\n" + "    if grep -q '^\\[Appearance\\]' \"$config_file\"; then\n" + "      if grep -q '^icon_theme=' \"$config_file\"; then\n" + "        sed -i \"s/^icon_theme=.*/icon_theme=$theme_name/\" \"$config_file\"\n" + "      else\n" + "        sed -i \"/^\\[Appearance\\]/a icon_theme=$theme_name\" \"$config_file\"\n" + "      fi\n"
+                + "    else\n" + "      printf '\\n[Appearance]\\nicon_theme=%s\\n' \"$theme_name\" >> \"$config_file\"\n" + "    fi\n" + "  else\n" + "    printf '[Appearance]\\nicon_theme=%s\\n' \"$theme_name\" > \"$config_file\"\n" + "  fi\n" + "}\n" + "update_qt_icon_theme " + _configDir + "/qt5ct/qt5ct.conf " + _shq(
+                    qtThemeName) + "\n" + "update_qt_icon_theme " + _configDir + "/qt6ct/qt6ct.conf " + _shq(qtThemeName) + "\n" + "rm -rf " + home + "/.cache/icon-cache " + home + "/.cache/thumbnails 2>/dev/null || true\n"
+        Quickshell.execDetached(["sh", "-lc", script])
+    }
+
+    function applyStoredIconTheme() {
+        updateGtkIconTheme(iconTheme)
+        updateQtIconTheme(iconTheme)
+    }
+
+    function getPopupYPosition(barHeight) {
+        const gothOffset = dankBarGothCornersEnabled ? Theme.cornerRadius : 0
+        return barHeight + dankBarSpacing + dankBarBottomGap - gothOffset + Theme.popupDistance
+    }
+
+    function getPopupTriggerPosition(globalPos, screen, barThickness, widgetWidth) {
+        const screenX = screen ? screen.x : 0
+        const screenY = screen ? screen.y : 0
+        const relativeX = globalPos.x - screenX
+        const relativeY = globalPos.y - screenY
+
+        if (dankBarPosition === SettingsData.Position.Left || dankBarPosition === SettingsData.Position.Right) {
+            return {
+                x: relativeY,
+                y: barThickness + dankBarSpacing + Theme.popupDistance,
+                width: widgetWidth
+            }
+        }
+        return {
+            x: relativeX,
+            y: barThickness + dankBarSpacing + dankBarBottomGap + Theme.popupDistance,
+            width: widgetWidth
+        }
+    }
+
+    function getFilteredScreens(componentId) {
+        var prefs = screenPreferences && screenPreferences[componentId] || ["all"]
+        if (prefs.includes("all")) {
+            return Quickshell.screens
+        }
+        return Quickshell.screens.filter(screen => prefs.includes(screen.name))
+    }
+
+    function sendTestNotifications() {
+        sendTestNotification(0)
+        testNotifTimer1.start()
+        testNotifTimer2.start()
+    }
+
+    function sendTestNotification(index) {
+        const notifications = [
+            ["Notification Position Test", "DMS test notification 1 of 3 ~ Hi there!", "preferences-system"],
+            ["Second Test", "DMS Notification 2 of 3 ~ Check it out!", "applications-graphics"],
+            ["Third Test", "DMS notification 3 of 3 ~ Enjoy!", "face-smile"]
+        ]
+
+        if (index < 0 || index >= notifications.length) {
+            return
+        }
+
+        const notif = notifications[index]
+        testNotificationProcess.command = ["notify-send", "-h", "int:transient:1", "-a", "DMS", "-i", notif[2], notif[0], notif[1]]
+        testNotificationProcess.running = true
+    }
+
+    function _shq(s) {
+        return "'" + String(s).replace(/'/g, "'\\''") + "'"
     }
 
     function setTheme(themeName) {
@@ -798,7 +977,24 @@ Singleton {
         saveSettings()
     }
 
-    // New preference setters
+    function setWidgetBackgroundColor(color) {
+        widgetBackgroundColor = color
+        saveSettings()
+    }
+
+    function setSurfaceBase(base) {
+        surfaceBase = base
+        saveSettings()
+        if (typeof Theme !== "undefined") {
+            Theme.generateSystemThemesFromCurrentTheme()
+        }
+    }
+
+    function setCornerRadius(radius) {
+        cornerRadius = radius
+        saveSettings()
+    }
+
     function setClockFormat(use24Hour) {
         use24HourClock = use24Hour
         saveSettings()
@@ -814,7 +1010,11 @@ Singleton {
         saveSettings()
     }
 
-    // Widget visibility setters
+    function setAnimationSpeed(speed) {
+        animationSpeed = speed
+        saveSettings()
+    }
+
     function setShowLauncherButton(enabled) {
         showLauncherButton = enabled
         saveSettings()
@@ -914,8 +1114,94 @@ Singleton {
         controlCenterShowAudioIcon = enabled
         saveSettings()
     }
+
     function setControlCenterWidgets(widgets) {
         controlCenterWidgets = widgets
+        saveSettings()
+    }
+
+    function setShowWorkspaceIndex(enabled) {
+        showWorkspaceIndex = enabled
+        saveSettings()
+    }
+
+    function setShowWorkspacePadding(enabled) {
+        showWorkspacePadding = enabled
+        saveSettings()
+    }
+
+    function setShowWorkspaceApps(enabled) {
+        showWorkspaceApps = enabled
+        saveSettings()
+    }
+
+    function setMaxWorkspaceIcons(maxIcons) {
+        maxWorkspaceIcons = maxIcons
+        saveSettings()
+    }
+
+    function setWorkspacesPerMonitor(enabled) {
+        workspacesPerMonitor = enabled
+        saveSettings()
+    }
+
+    function setWorkspaceNameIcon(workspaceName, iconData) {
+        var iconMap = JSON.parse(JSON.stringify(workspaceNameIcons))
+        iconMap[workspaceName] = iconData
+        workspaceNameIcons = iconMap
+        saveSettings()
+        workspaceIconsUpdated()
+    }
+
+    function removeWorkspaceNameIcon(workspaceName) {
+        var iconMap = JSON.parse(JSON.stringify(workspaceNameIcons))
+        delete iconMap[workspaceName]
+        workspaceNameIcons = iconMap
+        saveSettings()
+        workspaceIconsUpdated()
+    }
+
+    function getWorkspaceNameIcon(workspaceName) {
+        return workspaceNameIcons[workspaceName] || null
+    }
+
+    function setWaveProgressEnabled(enabled) {
+        waveProgressEnabled = enabled
+        saveSettings()
+    }
+
+    function setClockCompactMode(enabled) {
+        clockCompactMode = enabled
+        saveSettings()
+    }
+
+    function setFocusedWindowCompactMode(enabled) {
+        focusedWindowCompactMode = enabled
+        saveSettings()
+    }
+
+    function setRunningAppsCompactMode(enabled) {
+        runningAppsCompactMode = enabled
+        saveSettings()
+    }
+
+    function setRunningAppsCurrentWorkspace(enabled) {
+        runningAppsCurrentWorkspace = enabled
+        saveSettings()
+    }
+
+    function setClockDateFormat(format) {
+        clockDateFormat = format || ""
+        saveSettings()
+    }
+
+    function setLockDateFormat(format) {
+        lockDateFormat = format || ""
+        saveSettings()
+    }
+
+    function setMediaSize(size) {
+        mediaSize = size
         saveSettings()
     }
 
@@ -940,37 +1226,6 @@ Singleton {
         dankBarRightWidgets = order
         updateListModel(rightWidgetsModel, order)
         saveSettings()
-    }
-
-    function updateListModel(listModel, order) {
-        listModel.clear()
-        for (var i = 0; i < order.length; i++) {
-            var widgetId = typeof order[i] === "string" ? order[i] : order[i].id
-            var enabled = typeof order[i] === "string" ? true : order[i].enabled
-            var size = typeof order[i] === "string" ? undefined : order[i].size
-            var selectedGpuIndex = typeof order[i] === "string" ? undefined : order[i].selectedGpuIndex
-            var pciId = typeof order[i] === "string" ? undefined : order[i].pciId
-            var mountPath = typeof order[i] === "string" ? undefined : order[i].mountPath
-            var minimumWidth = typeof order[i] === "string" ? undefined : order[i].minimumWidth
-            var item = {
-                "widgetId": widgetId,
-                "enabled": enabled
-            }
-            if (size !== undefined)
-                item.size = size
-            if (selectedGpuIndex !== undefined)
-                item.selectedGpuIndex = selectedGpuIndex
-            if (pciId !== undefined)
-                item.pciId = pciId
-            if (mountPath !== undefined)
-                item.mountPath = mountPath
-            if (minimumWidth !== undefined)
-                item.minimumWidth = minimumWidth
-
-            listModel.append(item)
-        }
-        // Emit signal to notify widgets that data has changed
-        widgetDataChanged()
     }
 
     function resetDankBarWidgetsToDefault() {
@@ -1001,7 +1256,6 @@ Singleton {
         saveSettings()
     }
 
-    // View mode setters
     function setAppLauncherViewMode(mode) {
         appLauncherViewMode = mode
         saveSettings()
@@ -1017,7 +1271,6 @@ Singleton {
         saveSettings()
     }
 
-    // Weather location setter
     function setWeatherLocation(displayName, coordinates) {
         weatherLocation = displayName
         weatherCoordinates = coordinates
@@ -1034,19 +1287,9 @@ Singleton {
         saveSettings()
     }
 
-    // Network preference setter
     function setNetworkPreference(preference) {
         networkPreference = preference
         saveSettings()
-    }
-
-    function detectAvailableIconThemes() {
-        // First detect system default, then available themes
-        systemDefaultDetectionProcess.running = true
-    }
-
-    function detectQtTools() {
-        qtToolsDetectionProcess.running = true
     }
 
     function setIconTheme(themeName) {
@@ -1056,41 +1299,6 @@ Singleton {
         saveSettings()
         if (typeof Theme !== "undefined" && Theme.currentTheme === Theme.dynamic)
             Theme.generateSystemThemesFromCurrentTheme()
-    }
-
-    function updateGtkIconTheme(themeName) {
-        var gtkThemeName = (themeName === "System Default") ? systemDefaultIconTheme : themeName
-        if (gtkThemeName !== "System Default" && gtkThemeName !== "") {
-            if (DMSService.apiVersion >= 3) {
-                PortalService.setSystemIconTheme(gtkThemeName)
-            }
-
-            var configScript = "mkdir -p " + _configDir + "/gtk-3.0 " + _configDir + "/gtk-4.0\n" + "\n" + "for config_dir in " + _configDir + "/gtk-3.0 " + _configDir + "/gtk-4.0; do\n"
-                    + "    settings_file=\"$config_dir/settings.ini\"\n" + "    if [ -f \"$settings_file\" ]; then\n" + "        if grep -q '^gtk-icon-theme-name=' \"$settings_file\"; then\n" + "            sed -i 's/^gtk-icon-theme-name=.*/gtk-icon-theme-name=" + gtkThemeName + "/' \"$settings_file\"\n" + "        else\n"
-                    + "            if grep -q '\\[Settings\\]' \"$settings_file\"; then\n" + "                sed -i '/\\[Settings\\]/a gtk-icon-theme-name=" + gtkThemeName + "' \"$settings_file\"\n" + "            else\n" + "                echo -e '\\n[Settings]\\ngtk-icon-theme-name=" + gtkThemeName + "' >> \"$settings_file\"\n" + "            fi\n"
-                    + "        fi\n" + "    else\n" + "        echo -e '[Settings]\\ngtk-icon-theme-name=" + gtkThemeName + "' > \"$settings_file\"\n" + "    fi\n" + "done\n" + "\n" + "rm -rf ~/.cache/icon-cache ~/.cache/thumbnails 2>/dev/null || true\n" + "pkill -HUP -f 'gtk' 2>/dev/null || true\n"
-            Quickshell.execDetached(["sh", "-lc", configScript])
-        }
-    }
-
-    function updateQtIconTheme(themeName) {
-        var qtThemeName = (themeName === "System Default") ? "" : themeName
-        var home = _shq(Paths.strip(root._homeUrl))
-        if (!qtThemeName) {
-            // When "System Default" is selected, don't modify the config files at all
-            // This preserves the user's existing qt6ct configuration
-            return
-        }
-        var script = "mkdir -p " + _configDir + "/qt5ct " + _configDir + "/qt6ct " + _configDir + "/environment.d 2>/dev/null || true\n" + "update_qt_icon_theme() {\n" + "  local config_file=\"$1\"\n"
-                + "  local theme_name=\"$2\"\n" + "  if [ -f \"$config_file\" ]; then\n" + "    if grep -q '^\\[Appearance\\]' \"$config_file\"; then\n" + "      if grep -q '^icon_theme=' \"$config_file\"; then\n" + "        sed -i \"s/^icon_theme=.*/icon_theme=$theme_name/\" \"$config_file\"\n" + "      else\n" + "        sed -i \"/^\\[Appearance\\]/a icon_theme=$theme_name\" \"$config_file\"\n" + "      fi\n"
-                + "    else\n" + "      printf '\\n[Appearance]\\nicon_theme=%s\\n' \"$theme_name\" >> \"$config_file\"\n" + "    fi\n" + "  else\n" + "    printf '[Appearance]\\nicon_theme=%s\\n' \"$theme_name\" > \"$config_file\"\n" + "  fi\n" + "}\n" + "update_qt_icon_theme " + _configDir + "/qt5ct/qt5ct.conf " + _shq(
-                    qtThemeName) + "\n" + "update_qt_icon_theme " + _configDir + "/qt6ct/qt6ct.conf " + _shq(qtThemeName) + "\n" + "rm -rf " + home + "/.cache/icon-cache " + home + "/.cache/thumbnails 2>/dev/null || true\n"
-        Quickshell.execDetached(["sh", "-lc", script])
-    }
-
-    function applyStoredIconTheme() {
-        updateGtkIconTheme(iconTheme)
-        updateQtIconTheme(iconTheme)
     }
 
     function setLauncherLogoMode(mode) {
@@ -1158,6 +1366,11 @@ Singleton {
         saveSettings()
     }
 
+    function setUseSystemSoundTheme(enabled) {
+        useSystemSoundTheme = enabled
+        saveSettings()
+    }
+
     function setSoundNewNotification(enabled) {
         soundNewNotification = enabled
         saveSettings()
@@ -1170,6 +1383,61 @@ Singleton {
 
     function setSoundPluggedIn(enabled) {
         soundPluggedIn = enabled
+        saveSettings()
+    }
+
+    function setAcMonitorTimeout(timeout) {
+        acMonitorTimeout = timeout
+        saveSettings()
+    }
+
+    function setAcLockTimeout(timeout) {
+        acLockTimeout = timeout
+        saveSettings()
+    }
+
+    function setAcSuspendTimeout(timeout) {
+        acSuspendTimeout = timeout
+        saveSettings()
+    }
+
+    function setAcHibernateTimeout(timeout) {
+        acHibernateTimeout = timeout
+        saveSettings()
+    }
+
+    function setBatteryMonitorTimeout(timeout) {
+        batteryMonitorTimeout = timeout
+        saveSettings()
+    }
+
+    function setBatteryLockTimeout(timeout) {
+        batteryLockTimeout = timeout
+        saveSettings()
+    }
+
+    function setBatterySuspendTimeout(timeout) {
+        batterySuspendTimeout = timeout
+        saveSettings()
+    }
+
+    function setBatteryHibernateTimeout(timeout) {
+        batteryHibernateTimeout = timeout
+        saveSettings()
+    }
+
+    function setLockBeforeSuspend(enabled) {
+        lockBeforeSuspend = enabled
+        saveSettings()
+    }
+
+    function setLoginctlLockIntegration(enabled) {
+        loginctlLockIntegration = enabled
+        saveSettings()
+    }
+
+    function setLaunchPrefix(prefix) {
+        launchPrefix = prefix
         saveSettings()
     }
 
@@ -1227,8 +1495,36 @@ Singleton {
         saveSettings()
     }
 
-    function setCornerRadius(radius) {
-        cornerRadius = radius
+    function setDockPosition(position) {
+        dockPosition = position
+        if (position === SettingsData.Position.Bottom && dankBarPosition === SettingsData.Position.Bottom && showDock) {
+            setDankBarPosition(SettingsData.Position.Top)
+        }
+        if (position === SettingsData.Position.Top && dankBarPosition === SettingsData.Position.Top && showDock) {
+            setDankBarPosition(SettingsData.Position.Bottom)
+        }
+        if (position === SettingsData.Position.Left && dankBarPosition === SettingsData.Position.Left && showDock) {
+            setDankBarPosition(SettingsData.Position.Right)
+        }
+        if (position === SettingsData.Position.Right && dankBarPosition === SettingsData.Position.Right && showDock) {
+            setDankBarPosition(SettingsData.Position.Left)
+        }
+        saveSettings()
+        Qt.callLater(() => forceDockLayoutRefresh())
+    }
+
+    function setDockSpacing(spacing) {
+        dockSpacing = spacing
+        saveSettings()
+    }
+
+    function setDockBottomGap(gap) {
+        dockBottomGap = gap
+        saveSettings()
+    }
+
+    function setDockOpenOnOverview(enabled) {
+        dockOpenOnOverview = enabled
         saveSettings()
     }
 
@@ -1257,76 +1553,6 @@ Singleton {
         saveSettings()
     }
 
-    function setNotificationTimeoutLow(timeout) {
-        notificationTimeoutLow = timeout
-        saveSettings()
-    }
-
-    function setNotificationTimeoutNormal(timeout) {
-        notificationTimeoutNormal = timeout
-        saveSettings()
-    }
-
-    function setNotificationTimeoutCritical(timeout) {
-        notificationTimeoutCritical = timeout
-        saveSettings()
-    }
-
-    function setNotificationPopupPosition(position) {
-        notificationPopupPosition = position
-        saveSettings()
-    }
-
-    function setOsdAlwaysShowValue(enabled) {
-        osdAlwaysShowValue = enabled
-        saveSettings()
-    }
-
-    function sendTestNotifications() {
-        sendTestNotification(0)
-        testNotifTimer1.start()
-        testNotifTimer2.start()
-    }
-
-    function sendTestNotification(index) {
-        const notifications = [
-            ["Notification Position Test", "DMS test notification 1 of 3 ~ Hi there!", "preferences-system"],
-            ["Second Test", "DMS Notification 2 of 3 ~ Check it out!", "applications-graphics"],
-            ["Third Test", "DMS notification 3 of 3 ~ Enjoy!", "face-smile"]
-        ]
-
-        if (index < 0 || index >= notifications.length) {
-            return
-        }
-
-        const notif = notifications[index]
-        testNotificationProcess.command = ["notify-send", "-h", "int:transient:1", "-a", "DMS", "-i", notif[2], notif[0], notif[1]]
-        testNotificationProcess.running = true
-    }
-
-    property Process testNotificationProcess
-
-    testNotificationProcess: Process {
-        command: []
-        running: false
-    }
-
-    property Timer testNotifTimer1
-
-    testNotifTimer1: Timer {
-        interval: 400
-        repeat: false
-        onTriggered: sendTestNotification(1)
-    }
-
-    property Timer testNotifTimer2
-
-    testNotifTimer2: Timer {
-        interval: 800
-        repeat: false
-        onTriggered: sendTestNotification(2)
-    }
-
     function setDankBarSpacing(spacing) {
         dankBarSpacing = spacing
         saveSettings()
@@ -1342,6 +1568,27 @@ Singleton {
 
     function setDankBarInnerPadding(padding) {
         dankBarInnerPadding = padding
+        saveSettings()
+    }
+
+    function setDankBarPosition(position) {
+        dankBarPosition = position
+        if (position === SettingsData.Position.Bottom && dockPosition === SettingsData.Position.Bottom && showDock) {
+            setDockPosition(SettingsData.Position.Top)
+            return
+        }
+        if (position === SettingsData.Position.Top && dockPosition === SettingsData.Position.Top && showDock) {
+            setDockPosition(SettingsData.Position.Bottom)
+            return
+        }
+        if (position === SettingsData.Position.Left && dockPosition === SettingsData.Position.Left && showDock) {
+            setDockPosition(SettingsData.Position.Right)
+            return
+        }
+        if (position === SettingsData.Position.Right && dockPosition === SettingsData.Position.Right && showDock) {
+            setDockPosition(SettingsData.Position.Left)
+            return
+        }
         saveSettings()
     }
 
@@ -1375,82 +1622,6 @@ Singleton {
         saveSettings()
     }
 
-    function setDankBarPosition(position) {
-        dankBarPosition = position
-        if (position === SettingsData.Position.Bottom && dockPosition === SettingsData.Position.Bottom && showDock) {
-            setDockPosition(SettingsData.Position.Top)
-            return
-        }
-        if (position === SettingsData.Position.Top && dockPosition === SettingsData.Position.Top && showDock) {
-            setDockPosition(SettingsData.Position.Bottom)
-            return
-        }
-        if (position === SettingsData.Position.Left && dockPosition === SettingsData.Position.Left && showDock) {
-            setDockPosition(SettingsData.Position.Right)
-            return
-        }
-        if (position === SettingsData.Position.Right && dockPosition === SettingsData.Position.Right && showDock) {
-            setDockPosition(SettingsData.Position.Left)
-            return
-        }
-        saveSettings()
-    }
-
-    function setDockPosition(position) {
-        dockPosition = position
-        if (position === SettingsData.Position.Bottom && dankBarPosition === SettingsData.Position.Bottom && showDock) {
-            setDankBarPosition(SettingsData.Position.Top)
-        }
-        if (position === SettingsData.Position.Top && dankBarPosition === SettingsData.Position.Top && showDock) {
-            setDankBarPosition(SettingsData.Position.Bottom)
-        }
-        if (position === SettingsData.Position.Left && dankBarPosition === SettingsData.Position.Left && showDock) {
-            setDankBarPosition(SettingsData.Position.Right)
-        }
-        if (position === SettingsData.Position.Right && dankBarPosition === SettingsData.Position.Right && showDock) {
-            setDankBarPosition(SettingsData.Position.Left)
-        }
-        saveSettings()
-        Qt.callLater(() => forceDockLayoutRefresh())
-    }
-    function setDockSpacing(spacing) {
-        dockSpacing = spacing
-        saveSettings()
-    }
-    function setDockBottomGap(gap) {
-        dockBottomGap = gap
-        saveSettings()
-    }
-    function setDockOpenOnOverview(enabled) {
-        dockOpenOnOverview = enabled
-        saveSettings()
-    }
-
-    function getPopupYPosition(barHeight) {
-        const gothOffset = dankBarGothCornersEnabled ? Theme.cornerRadius : 0
-        return barHeight + dankBarSpacing + dankBarBottomGap - gothOffset + Theme.popupDistance
-    }
-
-    function getPopupTriggerPosition(globalPos, screen, barThickness, widgetWidth) {
-        const screenX = screen ? screen.x : 0
-        const screenY = screen ? screen.y : 0
-        const relativeX = globalPos.x - screenX
-        const relativeY = globalPos.y - screenY
-
-        if (dankBarPosition === SettingsData.Position.Left || dankBarPosition === SettingsData.Position.Right) {
-            return {
-                x: relativeY,
-                y: barThickness + dankBarSpacing + Theme.popupDistance,
-                width: widgetWidth
-            }
-        }
-        return {
-            x: relativeX,
-            y: barThickness + dankBarSpacing + dankBarBottomGap + Theme.popupDistance,
-            width: widgetWidth
-        }
-    }
-
     function setLockScreenShowPowerActions(enabled) {
         lockScreenShowPowerActions = enabled
         saveSettings()
@@ -1471,17 +1642,49 @@ Singleton {
         saveSettings()
     }
 
-    function setWidgetBackgroundColor(color) {
-        widgetBackgroundColor = color
+    function setNotificationTimeoutLow(timeout) {
+        notificationTimeoutLow = timeout
         saveSettings()
     }
 
-    function setSurfaceBase(base) {
-        surfaceBase = base
+    function setNotificationTimeoutNormal(timeout) {
+        notificationTimeoutNormal = timeout
         saveSettings()
-        if (typeof Theme !== "undefined") {
-            Theme.generateSystemThemesFromCurrentTheme()
-        }
+    }
+
+    function setNotificationTimeoutCritical(timeout) {
+        notificationTimeoutCritical = timeout
+        saveSettings()
+    }
+
+    function setNotificationPopupPosition(position) {
+        notificationPopupPosition = position
+        saveSettings()
+    }
+
+    function setOsdAlwaysShowValue(enabled) {
+        osdAlwaysShowValue = enabled
+        saveSettings()
+    }
+
+    function setPowerActionConfirm(confirm) {
+        powerActionConfirm = confirm;
+        saveSettings();
+    }
+
+    function setUpdaterUseCustomCommandEnabled(enabled) {
+        updaterUseCustomCommand = enabled;
+        saveSettings();
+    }
+
+    function setUpdaterCustomCommand(command) {
+        updaterCustomCommand = command;
+        saveSettings();
+    }
+
+    function setUpdaterTerminalAdditionalParams(customArgs) {
+        updaterTerminalAdditionalParams = customArgs;
+        saveSettings();
     }
 
     function setScreenPreferences(prefs) {
@@ -1489,15 +1692,6 @@ Singleton {
         saveSettings()
     }
 
-    function getFilteredScreens(componentId) {
-        var prefs = screenPreferences && screenPreferences[componentId] || ["all"]
-        if (prefs.includes("all")) {
-            return Quickshell.screens
-        }
-        return Quickshell.screens.filter(screen => prefs.includes(screen.name))
-    }
-
-    // Plugin settings functions
     function getPluginSetting(pluginId, key, defaultValue) {
         if (!pluginSettings[pluginId]) {
             return defaultValue
@@ -1522,24 +1716,6 @@ Singleton {
 
     function getPluginSettingsForPlugin(pluginId) {
         return pluginSettings[pluginId] || {}
-    }
-
-    function setAnimationSpeed(speed) {
-        animationSpeed = speed
-        saveSettings()
-    }
-
-    function _shq(s) {
-        return "'" + String(s).replace(/'/g, "'\\''") + "'"
-    }
-
-    Component.onCompleted: {
-        if (!isGreeterMode) {
-            loadSettings()
-            fontCheckTimer.start()
-            initializeListModels()
-            fprintdDetectionProcess.running = true
-        }
     }
 
     ListModel {
@@ -1575,7 +1751,28 @@ Singleton {
         }
     }
 
-    property bool hasTriedDefaultSettings: false
+    property Process testNotificationProcess
+
+    testNotificationProcess: Process {
+        command: []
+        running: false
+    }
+
+    property Timer testNotifTimer1
+
+    testNotifTimer1: Timer {
+        interval: 400
+        repeat: false
+        onTriggered: sendTestNotification(1)
+    }
+
+    property Timer testNotifTimer2
+
+    testNotifTimer2: Timer {
+        interval: 800
+        repeat: false
+        onTriggered: sendTestNotification(2)
+    }
 
     FileView {
         id: settingsFile
@@ -1692,7 +1889,6 @@ Singleton {
                 console.log("Copied default-settings.json to settings.json")
                 settingsFile.reload()
             } else {
-                // No default settings file found, just apply stored theme
                 applyStoredTheme()
             }
         }

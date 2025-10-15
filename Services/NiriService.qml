@@ -60,33 +60,6 @@ Singleton {
     }
 
     Process {
-        id: outputsProcess
-        command: ["niri", "msg", "-j", "outputs"]
-
-        stdout: StdioCollector {
-            onStreamFinished: {
-                try {
-                    const outputsData = JSON.parse(text)
-                    outputs = outputsData
-                    console.log("NiriService: Loaded", Object.keys(outputsData).length, "outputs")
-                    updateDisplayScales()
-                    if (windows.length > 0) {
-                        windows = sortWindowsByLayout(windows)
-                    }
-                } catch (e) {
-                    console.warn("NiriService: Failed to parse outputs:", e)
-                }
-            }
-        }
-
-        onExited: exitCode => {
-            if (exitCode !== 0) {
-                console.warn("NiriService: Failed to fetch outputs, exit code:", exitCode)
-            }
-        }
-    }
-
-    Process {
         id: validateProcess
         command: ["niri", "validate"]
         running: false
@@ -168,7 +141,23 @@ Singleton {
 
     function fetchOutputs() {
         if (!CompositorService.isNiri) return
-        outputsProcess.running = true
+        Proc.runCommand("niri-fetch-outputs", ["niri", "msg", "-j", "outputs"], (output, exitCode) => {
+            if (exitCode !== 0) {
+                console.warn("NiriService: Failed to fetch outputs, exit code:", exitCode)
+                return
+            }
+            try {
+                const outputsData = JSON.parse(output)
+                outputs = outputsData
+                console.log("NiriService: Loaded", Object.keys(outputsData).length, "outputs")
+                updateDisplayScales()
+                if (windows.length > 0) {
+                    windows = sortWindowsByLayout(windows)
+                }
+            } catch (e) {
+                console.warn("NiriService: Failed to parse outputs:", e)
+            }
+        })
     }
 
     function updateDisplayScales() {

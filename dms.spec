@@ -6,7 +6,7 @@
 
 Name:           dms
 Version:        %{version}
-Release:        1%{?dist}
+Release:        0.git%{?dist}
 Summary:        %{pkg_summary}
 
 License:        GPL-3.0-only
@@ -14,8 +14,8 @@ URL:            https://github.com/AvengeMedia/DankMaterialShell
 VCS:            {{{ git_dir_vcs }}}
 Source0:        {{{ git_dir_pack }}}
 
-# DMS CLI from danklinux latest release
-Source1:        https://github.com/AvengeMedia/danklinux/releases/latest/download/dms-distropkg-amd64.gz
+# DMS CLI from danklinux latest commit
+Source1:        https://github.com/AvengeMedia/danklinux/archive/refs/heads/master.tar.gz
 
 # DGOP binary from dgop latest release
 Source2:        https://github.com/AvengeMedia/dgop/releases/latest/download/dgop-linux-amd64.gz
@@ -23,6 +23,8 @@ Source2:        https://github.com/AvengeMedia/dgop/releases/latest/download/dgo
 BuildRequires:  git-core
 BuildRequires:  rpkg
 BuildRequires:  gzip
+BuildRequires:  golang >= 1.24
+BuildRequires:  make
 
 # Core requirements
 Requires:       (quickshell or quickshell-git)
@@ -43,6 +45,7 @@ Recommends:     wl-clipboard
 # Recommended system packages
 Recommends:     gammastep
 Recommends:     NetworkManager
+Recommends:     qt6-qtmultimedia
 Suggests:       qt6ct
 
 %description
@@ -77,20 +80,21 @@ used standalone. This package always includes the latest stable dgop release.
 %prep
 {{{ git_dir_setup_macro }}}
 
-# Extract CLI binary
-gunzip -c %{SOURCE1} > %{_builddir}/dms-cli
-chmod +x %{_builddir}/dms-cli
+# Extract DankLinux source
+tar -xzf %{SOURCE1} -C %{_builddir}
 
 # Extract DGOP binary
 gunzip -c %{SOURCE2} > %{_builddir}/dgop
 chmod +x %{_builddir}/dgop
 
 %build
-# DMS QML is source-only, binaries are prebuilt from releases
+# Build DMS CLI from source
+cd %{_builddir}/danklinux-master
+make dist
 
 %install
-# Install dms-cli binary
-install -Dm755 %{_builddir}/dms-cli %{buildroot}%{_bindir}/dms
+# Install dms-cli binary (built from source)
+install -Dm755 %{_builddir}/danklinux-master/bin/dms-linux-amd64 %{buildroot}%{_bindir}/dms
 
 # Install dgop binary
 install -Dm755 %{_builddir}/dgop %{buildroot}%{_bindir}/dgop

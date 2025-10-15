@@ -448,10 +448,10 @@ Item {
 
                     DankTextField {
                         width: parent.width
-                        text: SessionData.launchPrefix
+                        text: SettingsData.launchPrefix
                         placeholderText: "Enter launch prefix (e.g., 'uwsm-app')"
                         onTextEdited: {
-                            SessionData.setLaunchPrefix(text)
+                            SettingsData.setLaunchPrefix(text)
                         }
                     }
                 }
@@ -598,7 +598,7 @@ Item {
                             anchors.verticalCenter: parent.verticalCenter
                             onClicked: {
                                 AppUsageHistoryData.appUsageRanking = {}
-                                SettingsData.saveSettings()
+                                AppUsageHistoryData.saveSettings()
                             }
                         }
                     }
@@ -725,7 +725,7 @@ Item {
                                                     || {})
                                         delete currentRanking[modelData.id]
                                         AppUsageHistoryData.appUsageRanking = currentRanking
-                                        SettingsData.saveSettings()
+                                        AppUsageHistoryData.saveSettings()
                                     }
                                 }
                             }

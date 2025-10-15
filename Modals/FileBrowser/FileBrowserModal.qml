@@ -48,15 +48,17 @@ DankModal {
     }
 
     function getLastPath() {
-        const lastPath = browserType === "wallpaper" ? SessionData.wallpaperLastPath : browserType === "profile" ? SessionData.profileLastPath : ""
+        const lastPath = browserType === "wallpaper" ? CacheData.wallpaperLastPath : browserType === "profile" ? CacheData.profileLastPath : ""
         return (lastPath && lastPath !== "") ? lastPath : homeDir
     }
 
     function saveLastPath(path) {
         if (browserType === "wallpaper") {
-            SessionData.setWallpaperLastPath(path)
+            CacheData.wallpaperLastPath = path
+            CacheData.saveCache()
         } else if (browserType === "profile") {
-            SessionData.setProfileLastPath(path)
+            CacheData.profileLastPath = path
+            CacheData.saveCache()
         }
     }
 
